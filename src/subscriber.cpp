@@ -92,17 +92,19 @@ void videoCallback(const sensor_msgs::ImageConstPtr& msg){
 
     
 
-    cv::imshow("view2", roi);
-    cv::waitKey(30);
+    // cv::imshow("view2", roi);
+    // cv::waitKey(30);
 
-    cv::imshow("view3", roi2);
-    cv::waitKey(30);
+    // cv::imshow("view3", roi2);
+    // cv::waitKey(30);
 
-    cv::imshow("view4", roi3);
-    cv::waitKey(30);
+    // cv::imshow("view4", roi3);
+    // cv::waitKey(30);
 
     //tpub.publish(msg1);
-    tpub.publish(new_msg);
+    
+    //tpub.publish(new_msg);
+    pub.publish(set);
     
   }
   catch (cv_bridge::Exception& e)
@@ -117,10 +119,10 @@ int main(int argc, char **argv)
   ros::init(argc, argv, "image_segmentation_node");
   ros::NodeHandle nh;
 
-  cv::namedWindow("view");
-  cv::namedWindow("view2");
-  cv::namedWindow("view3");
-  cv::namedWindow("view4");
+  // cv::namedWindow("view");
+  // cv::namedWindow("view2");
+  // cv::namedWindow("view3");
+  // cv::namedWindow("view4");
   //cv::startWindowThread(); //DO NOT INCLUDE
   image_transport::ImageTransport it(nh);
 
@@ -170,8 +172,8 @@ int main(int argc, char **argv)
     ros::spinOnce();
     loop_rate.sleep();
   }
-  cv::destroyWindow("view");
-  cv::destroyWindow("view2");
-  cv::destroyWindow("view3");
-  cv::destroyWindow("view4");
+  // cv::destroyWindow("view");
+  // cv::destroyWindow("view2");
+  // cv::destroyWindow("view3");
+  // cv::destroyWindow("view4");
 }

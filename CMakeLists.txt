@@ -223,6 +223,10 @@ add_executable(subscriber src/subscriber.cpp)
 add_dependencies(subscriber ${catkin_EXPORTED_TARGETS} ${${PROJECT_NAME}_EXPORTED_TARGETS})
 target_link_libraries(subscriber ${catkin_LIBRARIES} ${OpenCV_LIBRARIES} ${PCL_LIBRARIES})
 
+add_executable(seg_listener src/seg_listener.cpp)
+add_dependencies(seg_listener ${catkin_EXPORTED_TARGETS} ${${PROJECT_NAME}_EXPORTED_TARGETS})
+target_link_libraries(seg_listener ${catkin_LIBRARIES} ${OpenCV_LIBRARIES} ${PCL_LIBRARIES})
+
 # Mark executables and/or libraries for installation
 install(FILES
         DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
