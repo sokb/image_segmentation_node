@@ -90,8 +90,6 @@ void videoCallback(const sensor_msgs::ImageConstPtr& msg){
     set.data[2]= *msg1;
     new_msg=set.data[0];
 
-    
-
     // cv::imshow("view2", roi);
     // cv::waitKey(30);
 
@@ -102,7 +100,7 @@ void videoCallback(const sensor_msgs::ImageConstPtr& msg){
     // cv::waitKey(30);
 
     //tpub.publish(msg1);
-    
+
     //tpub.publish(new_msg);
     pub.publish(set);
     
@@ -119,7 +117,7 @@ int main(int argc, char **argv)
   ros::init(argc, argv, "image_segmentation_node");
   ros::NodeHandle nh;
 
-  // cv::namedWindow("view");
+  cv::namedWindow("view");
   // cv::namedWindow("view2");
   // cv::namedWindow("view3");
   // cv::namedWindow("view4");
@@ -136,9 +134,6 @@ int main(int argc, char **argv)
   // ros::Subscriber pcl_seg_sub = nh.subscribe<pointcloud_msgs::PointCloud2_Segments>("pointcloud2_clustering/clusters", 1, pcl_seg_Callback);
   image_transport::Subscriber video_sub = it.subscribe("usb_cam/image_raw", 50, videoCallback);
 
-  //ros::spin();
-
-  //PUBLISHER CODE
   
   //cv::Mat image = cv::imread(argv[1], CV_LOAD_IMAGE_COLOR);
   //std::cout<<"Height is: "<< image.rows<<" and width is: "<<image.cols<<std::endl;
@@ -152,16 +147,6 @@ int main(int argc, char **argv)
   // cv::Rect myROI3(image.cols/3,0,image.cols/3,image.rows);
   // cv::Mat roi3= cv::Mat(image,myROI3);
 
-  // cv::Rect myROI(0, 0, image.cols/3,image.rows); 
-  // cv::Mat roi = cv::Mat(image,myROI);
-
-  // cv::Rect myROI2(image.cols/3, 0, image.cols/3,image.rows); 
-  // cv::Mat roi2 = cv::Mat(image,myROI2);
-
-  // cv::Rect myROI3(2*(image.cols/3),0,image.cols/3,image.rows);
-  // cv::Mat roi3= cv::Mat(image,myROI3);
-
-  
   // sensor_msgs::ImagePtr msg2 = cv_bridge::CvImage(std_msgs::Header(), "bgr8", roi2).toImageMsg();
   // sensor_msgs::ImagePtr msg3 = cv_bridge::CvImage(std_msgs::Header(), "bgr8", roi3).toImageMsg();
   ros::Rate loop_rate(0.5);
@@ -172,7 +157,7 @@ int main(int argc, char **argv)
     ros::spinOnce();
     loop_rate.sleep();
   }
-  // cv::destroyWindow("view");
+  cv::destroyWindow("view");
   // cv::destroyWindow("view2");
   // cv::destroyWindow("view3");
   // cv::destroyWindow("view4");
