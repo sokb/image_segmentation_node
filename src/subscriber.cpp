@@ -1,9 +1,12 @@
 #include <ros/ros.h>
+#include <iostream>
 #include "image_project/ImageSet.h"
 
 #include <image_transport/image_transport.h>
 #include <opencv2/highgui/highgui.hpp>
 #include <cv_bridge/cv_bridge.h>
+
+#include <sensor_msgs/LaserScan.h>
 
 #include <pcl/point_types.h>
 #include <boost/foreach.hpp>
@@ -112,10 +115,30 @@ void videoCallback(const sensor_msgs::ImageConstPtr& msg){
 
 }
 
+void laserCallback(const sensor_msgs::LaserScan::ConstPtr& msg){
+	ROS_INFO("angle_min is: %f\n",msg->angle_min);
+	ROS_INFO("angle_max is: %f\n",msg->angle_max);
+	ROS_INFO("angle_increment is: %f\n",msg->angle_increment);
+	ROS_INFO("time_increment is: %f\n",msg->time_increment);
+	ROS_INFO("scan_time is: %f\n",msg->scan_time);
+	ROS_INFO("range_min is: %f\n",msg->range_min);
+	ROS_INFO("range_max is: %f\n",msg->range_max);
+	unsigned long int i=0;
+	ROS_INFO("Size of ranges[] = %lu",msg->ranges.size()); //size=360
+	std::cout << "[" << std::endl;
+	while(i<msg->ranges.size()){
+		std::cout << i << ": " << msg->ranges[i]<< " ";
+		i++;
+	}
+	std::cout << "]" << std::endl;
+}
+
 int main(int argc, char **argv)
 {
   ros::init(argc, argv, "image_segmentation_node");
   ros::NodeHandle nh;
+
+  ROS_INFO("angle_max is 2.345\n");
 
   cv::namedWindow("view");
   // cv::namedWindow("view2");
@@ -133,22 +156,8 @@ int main(int argc, char **argv)
   // ros::Subscriber pcl_sub = nh.subscribe<PointCloud>("points2", 1, pcl_Callback);
   // ros::Subscriber pcl_seg_sub = nh.subscribe<pointcloud_msgs::PointCloud2_Segments>("pointcloud2_clustering/clusters", 1, pcl_seg_Callback);
   image_transport::Subscriber video_sub = it.subscribe("usb_cam/image_raw", 50, videoCallback);
+  ros::Subscriber laser_sub = nh.subscribe("scan",50,laserCallback);
 
-  
-  //cv::Mat image = cv::imread(argv[1], CV_LOAD_IMAGE_COLOR);
-  //std::cout<<"Height is: "<< image.rows<<" and width is: "<<image.cols<<std::endl;
-
-  // cv::Rect myROI(0, 0, image.cols/3,image.rows); 
-  // cv::Mat roi = cv::Mat(image,myROI);
-
-  // cv::Rect myROI2(image.cols-(image.cols/3), 0, image.cols/3,image.rows); 
-  // cv::Mat roi2 = cv::Mat(image,myROI2);
-
-  // cv::Rect myROI3(image.cols/3,0,image.cols/3,image.rows);
-  // cv::Mat roi3= cv::Mat(image,myROI3);
-
-  // sensor_msgs::ImagePtr msg2 = cv_bridge::CvImage(std_msgs::Header(), "bgr8", roi2).toImageMsg();
-  // sensor_msgs::ImagePtr msg3 = cv_bridge::CvImage(std_msgs::Header(), "bgr8", roi3).toImageMsg();
   ros::Rate loop_rate(0.5);
   while (nh.ok()){
     // pub.publish(msg);
