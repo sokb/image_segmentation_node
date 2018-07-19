@@ -24,9 +24,22 @@
 //     printf ("\t(%f, %f, %f)\n", pt.x, pt.y, pt.z);
 // }
 
-// void pcl_seg_Callback(const pointcloud_msgs::PointCloud2_Segments msg){
-//   int i=0;
-// }
+void pcl_seg_Callback(const pointcloud_msgs::PointCloud2_Segments& msg){
+	//pointcloud_msgs::PointCloud2_Segments msg_out;
+	double angle_min = msg.angle_min;
+	double angle_max = msg.angle_max;
+	double angle_increment = msg.angle_increment;
+
+	int i=0;
+	while(i < msg.cluster_id.size()){
+		std::cout << "i= " << i << ": " << msg.cluster_id[i] << std::endl;
+	 	i++;
+	}
+
+	std::cout<<"angle_min= " << angle_min << std::endl;
+	std::cout<<"angle_max= " << angle_max << std::endl;
+	std::cout<<"angle_increment= " << angle_increment << std::endl;
+}
 
 // void imageCallback(const sensor_msgs::ImageConstPtr& msg)
 // {
@@ -116,21 +129,21 @@ void videoCallback(const sensor_msgs::ImageConstPtr& msg){
 }
 
 void laserCallback(const sensor_msgs::LaserScan::ConstPtr& msg){
-	ROS_INFO("angle_min is: %f\n",msg->angle_min);
-	ROS_INFO("angle_max is: %f\n",msg->angle_max);
-	ROS_INFO("angle_increment is: %f\n",msg->angle_increment);
-	ROS_INFO("time_increment is: %f\n",msg->time_increment);
-	ROS_INFO("scan_time is: %f\n",msg->scan_time);
-	ROS_INFO("range_min is: %f\n",msg->range_min);
-	ROS_INFO("range_max is: %f\n",msg->range_max);
-	unsigned long int i=0;
-	ROS_INFO("Size of ranges[] = %lu",msg->ranges.size()); //size=360
-	std::cout << "[" << std::endl;
-	while(i<msg->ranges.size()){
-		std::cout << i << ": " << msg->ranges[i]<< " ";
-		i++;
-	}
-	std::cout << "]" << std::endl;
+	// ROS_INFO("angle_min is: %f\n",msg->angle_min);
+	// ROS_INFO("angle_max is: %f\n",msg->angle_max);
+	// ROS_INFO("angle_increment is: %f\n",msg->angle_increment);
+	// ROS_INFO("time_increment is: %f\n",msg->time_increment);
+	// ROS_INFO("scan_time is: %f\n",msg->scan_time);
+	// ROS_INFO("range_min is: %f\n",msg->range_min);
+	// ROS_INFO("range_max is: %f\n",msg->range_max);
+	// unsigned long int i=0;
+	// ROS_INFO("Size of ranges[] = %lu",msg->ranges.size()); //size=360
+	// // std::cout << "[" << std::endl;
+	// // while(i<msg->ranges.size()){
+	// // 	std::cout << i << ": " << msg->ranges[i]<< " ";
+	// // 	i++;
+	// // }
+	// // std::cout << "]" << std::endl;
 }
 
 int main(int argc, char **argv)
@@ -138,7 +151,7 @@ int main(int argc, char **argv)
   ros::init(argc, argv, "image_segmentation_node");
   ros::NodeHandle nh;
 
-  ROS_INFO("angle_max is 2.345\n");
+  //ROS_INFO("angle_max is 2.345\n");
 
   cv::namedWindow("view");
   // cv::namedWindow("view2");
@@ -154,9 +167,10 @@ int main(int argc, char **argv)
 
   // image_transport::Subscriber image_sub = it.subscribe("camera/image", 50, imageCallback);
   // ros::Subscriber pcl_sub = nh.subscribe<PointCloud>("points2", 1, pcl_Callback);
-  // ros::Subscriber pcl_seg_sub = nh.subscribe<pointcloud_msgs::PointCloud2_Segments>("pointcloud2_clustering/clusters", 1, pcl_seg_Callback);
+
+  ros::Subscriber pcl_seg_sub = nh.subscribe<const pointcloud_msgs::PointCloud2_Segments&>("pointcloud2_cluster_tracking/clusters", 1, pcl_seg_Callback);
   image_transport::Subscriber video_sub = it.subscribe("usb_cam/image_raw", 50, videoCallback);
-  ros::Subscriber laser_sub = nh.subscribe("scan",50,laserCallback);
+  ros::Subscriber laser_sub = nh.subscribe("scan",50, laserCallback);
 
   ros::Rate loop_rate(0.5);
   while (nh.ok()){
