@@ -8,6 +8,8 @@
 
 #include <sensor_msgs/LaserScan.h>
 
+
+#include <sensor_msgs/point_cloud_conversion.h>
 #include <pcl/point_types.h>
 #include <boost/foreach.hpp>
 #include <pcl/filters/passthrough.h>
@@ -30,15 +32,26 @@ void pcl_seg_Callback(const pointcloud_msgs::PointCloud2_Segments& msg){
 	double angle_max = msg.angle_max;
 	double angle_increment = msg.angle_increment;
 
-	int i=0;
-	while(i < msg.cluster_id.size()){
-		std::cout << "i= " << i << ": " << msg.cluster_id[i] << std::endl;
-	 	i++;
-	}
+	
+	// while(i < msg.cluster_id.size()){
+	// 	std::cout << "i= " << i << ": " << msg.cluster_id[i] << std::endl << std::endl;
+	// 	i++;
+	// }
 
-	std::cout<<"angle_min= " << angle_min << std::endl;
-	std::cout<<"angle_max= " << angle_max << std::endl;
-	std::cout<<"angle_increment= " << angle_increment << std::endl;
+	//std::cout << "DATA OF FIRST CLUSTER: "<< std::endl << std::endl << msg.clusters[0] << std::endl << std::endl;
+	//std::cout << "DATA OF SECOND CLUSTER: "<< std::endl << std::endl << msg.clusters[1] << std::endl << std::endl;
+	
+	sensor_msgs::PointCloud conv_msg;
+	bool b;
+	b = convertPointCloud2ToPointCloud(msg.clusters[0], conv_msg);
+
+	int i=0;
+	while(i< msg.clusters.size()){
+		std::cout << conv_msg.points[i] << std::endl;
+		i++;
+	}
+	std::cout<<"\n\n\n\n"
+
 }
 
 // void imageCallback(const sensor_msgs::ImageConstPtr& msg)
