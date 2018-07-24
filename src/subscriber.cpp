@@ -8,7 +8,6 @@
 
 #include <sensor_msgs/LaserScan.h>
 
-
 #include <sensor_msgs/point_cloud_conversion.h>
 #include <pcl/point_types.h>
 #include <boost/foreach.hpp>
@@ -50,7 +49,7 @@ void pcl_seg_Callback(const pointcloud_msgs::PointCloud2_Segments& msg){
 		std::cout << conv_msg.points[i] << std::endl;
 		i++;
 	}
-	std::cout<<"\n\n\n\n"
+	std::cout<<"\n\n\n\n";
 
 }
 
@@ -170,7 +169,6 @@ int main(int argc, char **argv)
   // cv::namedWindow("view2");
   // cv::namedWindow("view3");
   // cv::namedWindow("view4");
-  //cv::startWindowThread(); //DO NOT INCLUDE
   image_transport::ImageTransport it(nh);
 
   //advertise to output topic

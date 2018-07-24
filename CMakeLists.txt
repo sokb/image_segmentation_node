@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 2.8.3)
-project(image_project)
+project(image_segmentation_node)
 
 ## Compile as C++11, supported in ROS Kinetic and newer
 # add_compile_options(-std=c++11)
@@ -122,7 +122,7 @@ add_definitions(${PCL_DEFINITIONS})
 
 ## Declare a C++ library
 # add_library(${PROJECT_NAME}
-#   src/${PROJECT_NAME}/image_project.cpp
+#   src/${PROJECT_NAME}/image_segmentation_node.cpp
 # )
 
 ## Add cmake target dependencies of the library
@@ -133,7 +133,7 @@ add_definitions(${PCL_DEFINITIONS})
 ## Declare a C++ executable
 ## With catkin_make all packages are built within a single CMake context
 ## The recommended prefix ensures that target names across packages don't collide
-# add_executable(${PROJECT_NAME}_node src/image_project_node.cpp)
+# add_executable(${PROJECT_NAME}_node src/image_segmentation_node.cpp)
 
 ## Rename C++ executable without prefix
 ## The above recommended prefix causes long target names, the following renames the
@@ -190,7 +190,7 @@ add_definitions(${PCL_DEFINITIONS})
 #############
 
 ## Add gtest based cpp test target and link libraries
-# catkin_add_gtest(${PROJECT_NAME}-test test/test_image_project.cpp)
+# catkin_add_gtest(${PROJECT_NAME}-test test/test_image_segmentation_node.cpp)
 # if(TARGET ${PROJECT_NAME}-test)
 #   target_link_libraries(${PROJECT_NAME}-test ${PROJECT_NAME})
 # endif()
@@ -198,10 +198,8 @@ add_definitions(${PCL_DEFINITIONS})
 ## Add folders to be run by python nosetests
 # catkin_add_nosetests(test)
 
-# add the resized image message
-
 add_message_files(DIRECTORY msg
-   FILES ResizedImage.msg ImageSet.msg
+   FILES ImageSet.msg
 )
 generate_messages(DEPENDENCIES sensor_msgs)
 
