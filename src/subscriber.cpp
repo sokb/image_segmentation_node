@@ -1,6 +1,6 @@
 #include <ros/ros.h>
 #include <iostream>
-#include "image_project/ImageSet.h"
+#include "image_segmentation_node/ImageSet.h"
 
 #include <image_transport/image_transport.h>
 #include <opencv2/highgui/highgui.hpp>
@@ -108,7 +108,7 @@ void videoCallback(const sensor_msgs::ImageConstPtr& msg){
     cv::Rect myROI3(2*(cv_ptr->image.cols/3),0,cv_ptr->image.cols/3,cv_ptr->image.rows);
     cv::Mat roi3= cv::Mat(cv_ptr->image,myROI3);
 
-    image_project::ImageSet set;
+    image_segmentation_node::ImageSet set;
     //convert to sensor_msgs/Image
     sensor_msgs::ImagePtr msg1 = cv_bridge::CvImage(std_msgs::Header(), "bgr8", roi).toImageMsg();
     set.data[0]= *msg1;
@@ -173,7 +173,7 @@ int main(int argc, char **argv)
 
   //advertise to output topic
   //image_transport::Publisher pub = it.advertise("seg_images", 2);
-  pub = nh.advertise<image_project::ImageSet>("seg_images", 2);
+  pub = nh.advertise<image_segmentation_node::ImageSet>("seg_images", 2);
   tpub = it.advertise("normal_image", 2);
 
   // image_transport::Subscriber image_sub = it.subscribe("camera/image", 50, imageCallback);

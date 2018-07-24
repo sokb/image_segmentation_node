@@ -1,11 +1,11 @@
 #include <ros/ros.h>
-#include "image_project/ImageSet.h"
+#include "image_segmentation_node/ImageSet.h"
 
 #include <image_transport/image_transport.h>
 #include <opencv2/highgui/highgui.hpp>
 #include <cv_bridge/cv_bridge.h>
 
-void segCallback(const image_project::ImageSet set){
+void segCallback(const image_segmentation_node::ImageSet set){
 	sensor_msgs::Image msg1 =set.data[0];
 	sensor_msgs::Image msg2 =set.data[1];
 	sensor_msgs::Image msg3 =set.data[2];
