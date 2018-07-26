@@ -14,6 +14,8 @@
 #include <pcl/filters/passthrough.h>
 #include <pcl/point_cloud.h>
 #include <pcl_ros/point_cloud.h>
+#include <pcl/common/centroid.h>
+
 #include <pointcloud_msgs/PointCloud2_Segments.h>
 
 // typedef pcl::PointCloud<pcl::PointXYZ> PointCloud;
@@ -31,7 +33,29 @@ void pcl_seg_Callback(const pointcloud_msgs::PointCloud2_Segments& msg){
 	double angle_max = msg.angle_max;
 	double angle_increment = msg.angle_increment;
 
-	
+    pcl::PCLPointCloud2 pc2;
+    pcl_conversions::toPCL ( msg.clusters[0] , pc2 );	//from sensor_msgs::pointcloud2 to pcl::pointcloud2
+
+    pcl::PointCloud<pcl::PointXYZ> pc;
+    pcl::fromPCLPointCloud2 ( pc2 , pc );	//from pcl::pointcloud2 to pcl::pointcloud
+
+    Eigen::Vector4f cluster_centroid;
+    pcl::compute3DCentroid ( pc , cluster_centroid);	// (x,y,z,1)
+    //cluster_centroid_vec.push_back( cluster_centroid );
+
+    std::cout << "Centroid of first cluster is:\nx= " << cluster_centroid(0) << "\ny= " << cluster_centroid(1) << "\nz= " << cluster_centroid(2) << "\nlast= " << cluster_centroid(3) << "\n\n\n\n";
+
+	// //pcl1 test
+	// Eigen::Vector4f cluster_centroid;
+	// sensor_msgs::PointCloud conv_msg;
+	// convertPointCloud2ToPointCloud(msg.clusters[0], conv_msg);
+
+    
+
+ //    Eigen::Vector4f cluster_centroid;
+	// convertPointCloud2ToPointCloud( msg.clusters[0], conv_msg);
+ //    pcl::compute3DCentroid( cloud2 , cluster_centroid);
+
 	// while(i < msg.cluster_id.size()){
 	// 	std::cout << "i= " << i << ": " << msg.cluster_id[i] << std::endl << std::endl;
 	// 	i++;
@@ -40,15 +64,14 @@ void pcl_seg_Callback(const pointcloud_msgs::PointCloud2_Segments& msg){
 	//std::cout << "DATA OF FIRST CLUSTER: "<< std::endl << std::endl << msg.clusters[0] << std::endl << std::endl;
 	//std::cout << "DATA OF SECOND CLUSTER: "<< std::endl << std::endl << msg.clusters[1] << std::endl << std::endl;
 	
-	sensor_msgs::PointCloud conv_msg;
-	bool b;
-	b = convertPointCloud2ToPointCloud(msg.clusters[0], conv_msg);
+	// sensor_msgs::PointCloud conv_msg;
+	//convertPointCloud2ToPointCloud(msg.clusters[0], conv_msg);
 
-	int i=0;
-	while(i< msg.clusters.size()){
-		std::cout << conv_msg.points[i] << std::endl;
-		i++;
-	}
+	// int i=0;
+	// while(i< msg.clusters.size()){
+	// 	std::cout << conv_msg.points[i] << std::endl;
+	// 	i++;
+	// }
 	std::cout<<"\n\n\n\n";
 
 }
