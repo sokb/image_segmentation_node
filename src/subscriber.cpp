@@ -18,6 +18,10 @@
 
 #include <pointcloud_msgs/PointCloud2_Segments.h>
 
+ros::Publisher pub;
+image_transport::Publisher tpub;
+Eigen::Vector4f cluster_centroid;
+
 // typedef pcl::PointCloud<pcl::PointXYZ> PointCloud;
 
 // void pcl_Callback(const PointCloud::ConstPtr& msg)
@@ -39,11 +43,11 @@ void pcl_seg_Callback(const pointcloud_msgs::PointCloud2_Segments& msg){
     pcl::PointCloud<pcl::PointXYZ> pc;
     pcl::fromPCLPointCloud2 ( pc2 , pc );	//from pcl::pointcloud2 to pcl::pointcloud
 
-    Eigen::Vector4f cluster_centroid;
+    //Eigen::Vector4f cluster_centroid; //HERE OR GLOBAL
     pcl::compute3DCentroid ( pc , cluster_centroid);	// (x,y,z,1)
     //cluster_centroid_vec.push_back( cluster_centroid );
 
-    std::cout << "Centroid of first cluster is:\nx= " << cluster_centroid(0) << "\ny= " << cluster_centroid(1) << "\nz= " << cluster_centroid(2) << "\nlast= " << cluster_centroid(3) << "\n\n\n\n";
+    //std::cout << "Centroid of first cluster is:\nx= " << cluster_centroid(0) << "\ny= " << cluster_centroid(1) << "\nz= " << cluster_centroid(2) << "\nlast= " << cluster_centroid(3) << "\n\n\n\n";
 
 	// //pcl1 test
 	// Eigen::Vector4f cluster_centroid;
@@ -102,8 +106,6 @@ void pcl_seg_Callback(const pointcloud_msgs::PointCloud2_Segments& msg){
 //   }
 // }
 
-ros::Publisher pub;
-image_transport::Publisher tpub;
 
 void videoCallback(const sensor_msgs::ImageConstPtr& msg){
 	std_msgs::Header h = msg->header;
@@ -122,6 +124,11 @@ void videoCallback(const sensor_msgs::ImageConstPtr& msg){
       ROS_ERROR("cv_bridge exception: %s", e.what());
       return;
     }
+
+    int center = (cv_ptr->image.cols)/2;
+
+    std::cout << "Centroid of first cluster is:\nx= " << cluster_centroid(0) << "\ny= " << cluster_centroid(1) << "\nz= " << cluster_centroid(2) << "\nlast= " << cluster_centroid(3) << "\n\n\n\n";
+
     //cut a rectangle
     cv::Rect myROI(0, 0, (cv_ptr->image.cols)/3, cv_ptr->image.rows); 
     cv::Mat roi = cv::Mat(cv_ptr->image,myROI);
@@ -140,7 +147,12 @@ void videoCallback(const sensor_msgs::ImageConstPtr& msg){
     set.data[1]= *msg1;
     msg1 = cv_bridge::CvImage(std_msgs::Header(), "bgr8", roi3).toImageMsg();
     set.data[2]= *msg1;
-    new_msg=set.data[0];
+    //new_msg=set.data[0];
+
+    cv::Rect myROI4(center-50, 0, 100, cv_ptr->image.rows); 
+    cv::Mat roi4 = cv::Mat(cv_ptr->image,myROI4);
+    cv::imshow("view5", roi4);
+    cv::waitKey(30);
 
     // cv::imshow("view2", roi);
     // cv::waitKey(30);
@@ -174,12 +186,12 @@ void laserCallback(const sensor_msgs::LaserScan::ConstPtr& msg){
 	// ROS_INFO("range_max is: %f\n",msg->range_max);
 	// unsigned long int i=0;
 	// ROS_INFO("Size of ranges[] = %lu",msg->ranges.size()); //size=360
-	// // std::cout << "[" << std::endl;
-	// // while(i<msg->ranges.size()){
-	// // 	std::cout << i << ": " << msg->ranges[i]<< " ";
-	// // 	i++;
-	// // }
-	// // std::cout << "]" << std::endl;
+	// std::cout << "[" << std::endl;
+	// while(i<msg->ranges.size()){
+	// 	std::cout << i << ": " << msg->ranges[i]<< " ";
+	// 	i++;
+	// }
+	// std::cout << "]" << std::endl;
 }
 
 int main(int argc, char **argv)
@@ -193,6 +205,7 @@ int main(int argc, char **argv)
   // cv::namedWindow("view2");
   // cv::namedWindow("view3");
   // cv::namedWindow("view4");
+  cv::namedWindow("view5");
   image_transport::ImageTransport it(nh);
 
   //advertise to output topic
@@ -204,7 +217,7 @@ int main(int argc, char **argv)
   // ros::Subscriber pcl_sub = nh.subscribe<PointCloud>("points2", 1, pcl_Callback);
 
   ros::Subscriber pcl_seg_sub = nh.subscribe<const pointcloud_msgs::PointCloud2_Segments&>("pointcloud2_cluster_tracking/clusters", 1, pcl_seg_Callback);
-  image_transport::Subscriber video_sub = it.subscribe("usb_cam/image_raw", 50, videoCallback);
+  image_transport::Subscriber video_sub = it.subscribe("camera/rgb/image_raw", 50, videoCallback);		//  usb_cam/image_raw gia to rosbag me to video mono.
   ros::Subscriber laser_sub = nh.subscribe("scan",50, laserCallback);
 
   ros::Rate loop_rate(0.5);
@@ -219,4 +232,5 @@ int main(int argc, char **argv)
   // cv::destroyWindow("view2");
   // cv::destroyWindow("view3");
   // cv::destroyWindow("view4");
+  cv::namedWindow("view5");
 }
