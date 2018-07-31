@@ -20,7 +20,6 @@
 
 ros::Publisher pub;
 image_transport::Publisher tpub;
-Eigen::Vector4f cluster_centroid;
 
 // typedef pcl::PointCloud<pcl::PointXYZ> PointCloud;
 
@@ -30,6 +29,8 @@ Eigen::Vector4f cluster_centroid;
 //   BOOST_FOREACH (const pcl::PointXYZ& pt, msg->points)
 //     printf ("\t(%f, %f, %f)\n", pt.x, pt.y, pt.z);
 // }
+
+int flag=0;
 
 void pcl_seg_Callback(const pointcloud_msgs::PointCloud2_Segments& msg){
 	//pointcloud_msgs::PointCloud2_Segments msg_out;
@@ -43,18 +44,16 @@ void pcl_seg_Callback(const pointcloud_msgs::PointCloud2_Segments& msg){
     pcl::PointCloud<pcl::PointXYZ> pc;
     pcl::fromPCLPointCloud2 ( pc2 , pc );	//from pcl::pointcloud2 to pcl::pointcloud
 
-    //Eigen::Vector4f cluster_centroid; //HERE OR GLOBAL
-    pcl::compute3DCentroid ( pc , cluster_centroid);	// (x,y,z,1)
-    //cluster_centroid_vec.push_back( cluster_centroid );
+    // Eigen::Vector4f cluster_centroid;
+    // pcl::compute3DCentroid ( pc , cluster_centroid);	// (x,y,z,1)
+    // //cluster_centroid_vec.push_back( cluster_centroid );
 
-    //std::cout << "Centroid of first cluster is:\nx= " << cluster_centroid(0) << "\ny= " << cluster_centroid(1) << "\nz= " << cluster_centroid(2) << "\nlast= " << cluster_centroid(3) << "\n\n\n\n";
+    // std::cout << "Centroid of first cluster is:\nx= " << cluster_centroid(0) << "\ny= " << cluster_centroid(1) << "\nz= " << cluster_centroid(2) << "\nlast= " << cluster_centroid(3) << "\n\n\n\n";
 
 	// //pcl1 test
 	// Eigen::Vector4f cluster_centroid;
 	// sensor_msgs::PointCloud conv_msg;
 	// convertPointCloud2ToPointCloud(msg.clusters[0], conv_msg);
-
-    
 
  //    Eigen::Vector4f cluster_centroid;
 	// convertPointCloud2ToPointCloud( msg.clusters[0], conv_msg);
@@ -65,6 +64,26 @@ void pcl_seg_Callback(const pointcloud_msgs::PointCloud2_Segments& msg){
 	// 	i++;
 	// }
 
+    pcl::PointXYZ min_point(0,0,0);
+    pcl::PointXYZ max_point(0,0,0);
+
+	for (int i=0; i < msg.clusters.size(); i++){		//for every point in the cluster 
+		std::cout << "x= " << pc.points[i].x << std::endl << "y= " << pc.points[i].y << std::endl << "z= " << pc.points[i].z << "\n\n\n";
+		if(pc.points[i].x < min_point.x){
+			min_point.x= pc.points[i].x;
+			min_point.y= pc.points[i].y;
+			min_point.z= pc.points[i].z;
+		}
+		else if(pc.points[i].x > max_point.x){
+			max_point.x= pc.points[i].x;
+			max_point.y= pc.points[i].y;
+			max_point.z= pc.points[i].z;
+		}
+	}
+
+	std::cout << "MAX x= " << max_point.x << std::endl << "y= " << max_point.y << std::endl << "z= " << max_point.z << "\n\n\n";
+	std::cout << "MIN x= " << min_point.x << std::endl << "y= " << min_point.y << std::endl << "z= " << min_point.z << "\n\n\n";
+	flag=1;
 	//std::cout << "DATA OF FIRST CLUSTER: "<< std::endl << std::endl << msg.clusters[0] << std::endl << std::endl;
 	//std::cout << "DATA OF SECOND CLUSTER: "<< std::endl << std::endl << msg.clusters[1] << std::endl << std::endl;
 	
@@ -126,8 +145,6 @@ void videoCallback(const sensor_msgs::ImageConstPtr& msg){
     }
 
     int center = (cv_ptr->image.cols)/2;
-
-    std::cout << "Centroid of first cluster is:\nx= " << cluster_centroid(0) << "\ny= " << cluster_centroid(1) << "\nz= " << cluster_centroid(2) << "\nlast= " << cluster_centroid(3) << "\n\n\n\n";
 
     //cut a rectangle
     cv::Rect myROI(0, 0, (cv_ptr->image.cols)/3, cv_ptr->image.rows); 
