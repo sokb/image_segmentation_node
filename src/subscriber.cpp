@@ -1,5 +1,7 @@
 #include <ros/ros.h>
 #include <iostream>
+#include <stdlib.h>
+#include <math.h> 
 #include "image_segmentation_node/ImageSet.h"
 
 #include <image_transport/image_transport.h>
@@ -30,19 +32,13 @@ image_transport::Publisher tpub;
 //     printf ("\t(%f, %f, %f)\n", pt.x, pt.y, pt.z);
 // }
 
-int flag=0;
+const double PI = 3.141592653589793;
 
 void pcl_seg_Callback(const pointcloud_msgs::PointCloud2_Segments& msg){
 	//pointcloud_msgs::PointCloud2_Segments msg_out;
 	double angle_min = msg.angle_min;
 	double angle_max = msg.angle_max;
-	double angle_increment = msg.angle_increment;
-
-    pcl::PCLPointCloud2 pc2;
-    pcl_conversions::toPCL ( msg.clusters[0] , pc2 );	//from sensor_msgs::pointcloud2 to pcl::pointcloud2
-
-    pcl::PointCloud<pcl::PointXYZ> pc;
-    pcl::fromPCLPointCloud2 ( pc2 , pc );	//from pcl::pointcloud2 to pcl::pointcloud
+	double angle_increment = msg.angle_increment;   
 
     // Eigen::Vector4f cluster_centroid;
     // pcl::compute3DCentroid ( pc , cluster_centroid);	// (x,y,z,1)
@@ -63,31 +59,83 @@ void pcl_seg_Callback(const pointcloud_msgs::PointCloud2_Segments& msg){
 	// 	std::cout << "i= " << i << ": " << msg.cluster_id[i] << std::endl << std::endl;
 	// 	i++;
 	// }
+	for (int j=0; j < msg.clusters.size(); j++){		//for every cluster
+		double angle_l, angle_r, c_angle_l, c_angle_r;
 
-    pcl::PointXYZ min_point(0,0,0);
-    pcl::PointXYZ max_point(0,0,0);
+		pcl::PCLPointCloud2 pc2;
+    	pcl_conversions::toPCL ( msg.clusters[j] , pc2 );	//from sensor_msgs::pointcloud2 to pcl::pointcloud2
 
-	for (int i=0; i < msg.clusters.size(); i++){		//for every point in the cluster 
-		std::cout << "x= " << pc.points[i].x << std::endl << "y= " << pc.points[i].y << std::endl << "z= " << pc.points[i].z << "\n\n\n";
-		if(pc.points[i].x < min_point.x){
-			min_point.x= pc.points[i].x;
-			min_point.y= pc.points[i].y;
-			min_point.z= pc.points[i].z;
+    	pcl::PointCloud<pcl::PointXYZ> pc;
+    	pcl::fromPCLPointCloud2 ( pc2 , pc );	//from pcl::pointcloud2 to pcl::pointcloud
+    	//pc= clusters[j] in pointcloud format
+
+    	pcl::PointXYZ min_point(pc.points[0]);
+    	pcl::PointXYZ max_point(pc.points[0]);
+
+  		// min_point.x= pc.points[0].x;
+		// min_point.y= pc.points[0].y;
+		// min_point.z= pc.points[0].z;
+
+		// max_point.x= pc.points[0].x;
+		// max_point.y= pc.points[0].y;
+		// max_point.z= pc.points[0].z;
+
+		for (int i=1; i < pc.points.size(); i++){		//for every point in the cluster 	
+			//std::cout << "x= " << pc.points[i].x << std::endl << "y= " << pc.points[i].y << std::endl << "z= " << pc.points[i].z << "\n\n\n";
+			if(pc.points[i].y < min_point.y){
+				min_point.x= pc.points[i].x;
+				min_point.y= pc.points[i].y;
+				min_point.z= pc.points[i].z;
+			}
+		 	if(pc.points[i].y > max_point.y){
+				max_point.x= pc.points[i].x;
+				max_point.y= pc.points[i].y;
+				max_point.z= pc.points[i].z;
+			}
 		}
-		else if(pc.points[i].x > max_point.x){
-			max_point.x= pc.points[i].x;
-			max_point.y= pc.points[i].y;
-			max_point.z= pc.points[i].z;
+		// std::cout << "MAX y= " << max_point.y << std::endl << "x= " << max_point.x << std::endl << "z= " << max_point.z << std::endl << std::endl;
+		// std::cout << "MIN y= " << min_point.y << std::endl << "x= " << min_point.x << std::endl << "z= " << min_point.z << std::endl << std::endl;
+
+		//angle calculation in rads [0,2pi] starting from upper-left quadrant. 		! x,y are reversed because of laserscan's reversed x,y axes
+		angle_l= atan2(min_point.x, min_point.y);
+		angle_r= atan2(max_point.x, max_point.y);
+
+		//conversion to center-based angles
+		if(angle_l > 0 && angle_l < PI/2){
+			c_angle_l= -(PI/2 - angle_l);
 		}
+		else if(angle_l == PI/2){
+			c_angle_l= 0;
+		}
+		else if(angle_l > PI/2 && angle_l <= 3*PI/2){
+			c_angle_l= angle_l - PI/2;
+		}
+		else{
+			c_angle_l= -(450-angle_l);
+		}
+
+
+		if(angle_r > 0 && angle_r < PI/2){
+			c_angle_r= -(PI/2 - angle_r);
+		}
+		else if(angle_r == PI/2){
+			c_angle_r= 0;
+		}
+		else if(angle_r > PI/2 && angle_r <= 3*PI/2){
+			c_angle_r= angle_r - PI/2;
+		}
+		else{
+			c_angle_r= -(450-angle_r);
+		}
+
+		// std::cout << "min angle= " << angle_l << std::endl << "max angle= " << angle_r << "\n\n\n";	
+	
+
 	}
-
-	std::cout << "MAX x= " << max_point.x << std::endl << "y= " << max_point.y << std::endl << "z= " << max_point.z << "\n\n\n";
-	std::cout << "MIN x= " << min_point.x << std::endl << "y= " << min_point.y << std::endl << "z= " << min_point.z << "\n\n\n";
-	flag=1;
-	//std::cout << "DATA OF FIRST CLUSTER: "<< std::endl << std::endl << msg.clusters[0] << std::endl << std::endl;
+	// std::cout << "DATA OF FIRST CLUSTER: "<< std::endl << std::endl << msg.clusters[0] << std::endl << std::endl;
 	//std::cout << "DATA OF SECOND CLUSTER: "<< std::endl << std::endl << msg.clusters[1] << std::endl << std::endl;
 	
-	// sensor_msgs::PointCloud conv_msg;
+	//sensor_msgs::PointCloud conv_msg;
 	//convertPointCloud2ToPointCloud(msg.clusters[0], conv_msg);
 
 	// int i=0;
@@ -95,7 +143,6 @@ void pcl_seg_Callback(const pointcloud_msgs::PointCloud2_Segments& msg){
 	// 	std::cout << conv_msg.points[i] << std::endl;
 	// 	i++;
 	// }
-	std::cout<<"\n\n\n\n";
 
 }
 
@@ -166,11 +213,6 @@ void videoCallback(const sensor_msgs::ImageConstPtr& msg){
     set.data[2]= *msg1;
     //new_msg=set.data[0];
 
-    cv::Rect myROI4(center-50, 0, 100, cv_ptr->image.rows); 
-    cv::Mat roi4 = cv::Mat(cv_ptr->image,myROI4);
-    cv::imshow("view5", roi4);
-    cv::waitKey(30);
-
     // cv::imshow("view2", roi);
     // cv::waitKey(30);
 
@@ -222,7 +264,6 @@ int main(int argc, char **argv)
   // cv::namedWindow("view2");
   // cv::namedWindow("view3");
   // cv::namedWindow("view4");
-  cv::namedWindow("view5");
   image_transport::ImageTransport it(nh);
 
   //advertise to output topic
@@ -249,5 +290,4 @@ int main(int argc, char **argv)
   // cv::destroyWindow("view2");
   // cv::destroyWindow("view3");
   // cv::destroyWindow("view4");
-  cv::namedWindow("view5");
 }
