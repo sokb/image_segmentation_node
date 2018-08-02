@@ -23,6 +23,8 @@
 ros::Publisher pub;
 image_transport::Publisher tpub;
 
+const double PI = 3.141592653589793;
+
 // typedef pcl::PointCloud<pcl::PointXYZ> PointCloud;
 
 // void pcl_Callback(const PointCloud::ConstPtr& msg)
@@ -32,7 +34,7 @@ image_transport::Publisher tpub;
 //     printf ("\t(%f, %f, %f)\n", pt.x, pt.y, pt.z);
 // }
 
-const double PI = 3.141592653589793;
+
 
 void pcl_seg_Callback(const pointcloud_msgs::PointCloud2_Segments& msg){
 	//pointcloud_msgs::PointCloud2_Segments msg_out;
@@ -72,14 +74,6 @@ void pcl_seg_Callback(const pointcloud_msgs::PointCloud2_Segments& msg){
     	pcl::PointXYZ min_point(pc.points[0]);
     	pcl::PointXYZ max_point(pc.points[0]);
 
-  		// min_point.x= pc.points[0].x;
-		// min_point.y= pc.points[0].y;
-		// min_point.z= pc.points[0].z;
-
-		// max_point.x= pc.points[0].x;
-		// max_point.y= pc.points[0].y;
-		// max_point.z= pc.points[0].z;
-
 		for (int i=1; i < pc.points.size(); i++){		//for every point in the cluster 	
 			//std::cout << "x= " << pc.points[i].x << std::endl << "y= " << pc.points[i].y << std::endl << "z= " << pc.points[i].z << "\n\n\n";
 			if(pc.points[i].y < min_point.y){
@@ -101,39 +95,56 @@ void pcl_seg_Callback(const pointcloud_msgs::PointCloud2_Segments& msg){
 		angle_r= atan2(max_point.x, max_point.y);
 
 		//conversion to center-based angles
-		if(angle_l > 0 && angle_l < PI/2){
-			c_angle_l= -(PI/2 - angle_l);
+		if(angle_l > PI/2 && angle_l < PI){			//A
+			c_angle_l= - ( angle_l - PI/2 );
 		}
-		else if(angle_l == PI/2){
+		else if(angle_l > -PI/2 && angle_l < PI/2){	//B,C
+			c_angle_l= PI/2 - angle_l;
+		}
+		else if(angle_l > -PI && angle_l < -PI/2){	//D
+			c_angle_l= -( 3*PI/2 +angle_l );
+		}
+		else if(angle_l == PI/2){			
 			c_angle_l= 0;
 		}
-		else if(angle_l > PI/2 && angle_l <= 3*PI/2){
-			c_angle_l= angle_l - PI/2;
+		else if(angle_l == PI || angle_l == -PI){			
+			c_angle_l= -PI/2;
 		}
-		else{
-			c_angle_l= -(450-angle_l);
+		else if(angle_l == -PI/2){			
+			c_angle_l= PI;
 		}
 
 
-		if(angle_r > 0 && angle_r < PI/2){
-			c_angle_r= -(PI/2 - angle_r);
+		if(angle_r > PI/2 && angle_r < PI){			//A
+			c_angle_r= - ( angle_r - PI/2 );
 		}
-		else if(angle_r == PI/2){
+		else if(angle_r > -PI/2 && angle_r < PI/2){	//B,C
+			c_angle_r= PI/2 - angle_r;
+		}
+		else if(angle_r > -PI && angle_r < -PI/2){	//D
+			c_angle_r= -( 3*PI/2 +angle_r );
+		}
+		else if(angle_r == PI/2){			
 			c_angle_r= 0;
 		}
-		else if(angle_r > PI/2 && angle_r <= 3*PI/2){
-			c_angle_r= angle_r - PI/2;
+		else if(angle_r == PI || angle_r == -PI){			
+			c_angle_r= -PI/2;
 		}
-		else{
-			c_angle_r= -(450-angle_r);
+		else if(angle_r == -PI/2){			
+			c_angle_r= PI;
 		}
 
-		// std::cout << "min angle= " << angle_l << std::endl << "max angle= " << angle_r << "\n\n\n";	
+		// std::cout << "min angle: " << angle_l*180/PI << "\t\tcenter based: " << c_angle_l*180/PI << std::endl;
+		// std::cout << "max angle: " << angle_r*180/PI << "\t\tcenter based: " << c_angle_r*180/PI << std::endl;
 	
 
 	}
-	// std::cout << "DATA OF FIRST CLUSTER: "<< std::endl << std::endl << msg.clusters[0] << std::endl << std::endl;
+	// std::cout << "HEADER INFO BELOW:\n\n" << msg.header<< std::endl;
+	// std::cout << "FIRST STAMP:\n\n" << msg.first_stamp << std::endl;
+
+	//std::cout << "DATA OF FIRST CLUSTER: "<< std::endl << std::endl << msg.clusters[0] << std::endl << std::endl;
 	//std::cout << "DATA OF SECOND CLUSTER: "<< std::endl << std::endl << msg.clusters[1] << std::endl << std::endl;
+
 	
 	//sensor_msgs::PointCloud conv_msg;
 	//convertPointCloud2ToPointCloud(msg.clusters[0], conv_msg);
@@ -203,6 +214,13 @@ void videoCallback(const sensor_msgs::ImageConstPtr& msg){
     cv::Rect myROI3(2*(cv_ptr->image.cols/3),0,cv_ptr->image.cols/3,cv_ptr->image.rows);
     cv::Mat roi3= cv::Mat(cv_ptr->image,myROI3);
 
+
+    cv::Rect myROI4(0, 0, 150, 150); 
+    cv::Mat roi4 = cv::Mat(cv_ptr->image,myROI4);
+    cv::imshow("view5", roi4);
+    cv::waitKey(30);
+
+
     image_segmentation_node::ImageSet set;
     //convert to sensor_msgs/Image
     sensor_msgs::ImagePtr msg1 = cv_bridge::CvImage(std_msgs::Header(), "bgr8", roi).toImageMsg();
@@ -264,6 +282,7 @@ int main(int argc, char **argv)
   // cv::namedWindow("view2");
   // cv::namedWindow("view3");
   // cv::namedWindow("view4");
+  cv::namedWindow("view5");
   image_transport::ImageTransport it(nh);
 
   //advertise to output topic
@@ -290,4 +309,5 @@ int main(int argc, char **argv)
   // cv::destroyWindow("view2");
   // cv::destroyWindow("view3");
   // cv::destroyWindow("view4");
+  cv::destroyWindow("view5");
 }
