@@ -23,78 +23,14 @@
 ros::Publisher pub;
 image_transport::Publisher tpub;
 
+
+std::vector<std::pair<double,double>> pair_vector;
+int got_message = 0;
 const double PI = 3.141592653589793;
 
-// typedef pcl::PointCloud<pcl::PointXYZ> PointCloud;
-
-// void pcl_Callback(const PointCloud::ConstPtr& msg)
-// {
-//   printf ("Cloud: width = %d, height = %d\n", msg->width, msg->height);
-//   BOOST_FOREACH (const pcl::PointXYZ& pt, msg->points)
-//     printf ("\t(%f, %f, %f)\n", pt.x, pt.y, pt.z);
-// }
-
-
-
-void pcl_seg_Callback(const pointcloud_msgs::PointCloud2_Segments& msg){
-	//pointcloud_msgs::PointCloud2_Segments msg_out;
-	double angle_min = msg.angle_min;
-	double angle_max = msg.angle_max;
-	double angle_increment = msg.angle_increment;   
-
-    // Eigen::Vector4f cluster_centroid;
-    // pcl::compute3DCentroid ( pc , cluster_centroid);	// (x,y,z,1)
-    // //cluster_centroid_vec.push_back( cluster_centroid );
-
-    // std::cout << "Centroid of first cluster is:\nx= " << cluster_centroid(0) << "\ny= " << cluster_centroid(1) << "\nz= " << cluster_centroid(2) << "\nlast= " << cluster_centroid(3) << "\n\n\n\n";
-
-	// //pcl1 test
-	// Eigen::Vector4f cluster_centroid;
-	// sensor_msgs::PointCloud conv_msg;
-	// convertPointCloud2ToPointCloud(msg.clusters[0], conv_msg);
-
- //    Eigen::Vector4f cluster_centroid;
-	// convertPointCloud2ToPointCloud( msg.clusters[0], conv_msg);
- //    pcl::compute3DCentroid( cloud2 , cluster_centroid);
-
-	// while(i < msg.cluster_id.size()){
-	// 	std::cout << "i= " << i << ": " << msg.cluster_id[i] << std::endl << std::endl;
-	// 	i++;
-	// }
-	for (int j=0; j < msg.clusters.size(); j++){		//for every cluster
-		double angle_l, angle_r, c_angle_l, c_angle_r;
-
-		pcl::PCLPointCloud2 pc2;
-    	pcl_conversions::toPCL ( msg.clusters[j] , pc2 );	//from sensor_msgs::pointcloud2 to pcl::pointcloud2
-
-    	pcl::PointCloud<pcl::PointXYZ> pc;
-    	pcl::fromPCLPointCloud2 ( pc2 , pc );	//from pcl::pointcloud2 to pcl::pointcloud
-    	//pc= clusters[j] in pointcloud format
-
-    	pcl::PointXYZ min_point(pc.points[0]);
-    	pcl::PointXYZ max_point(pc.points[0]);
-
-		for (int i=1; i < pc.points.size(); i++){		//for every point in the cluster 	
-			//std::cout << "x= " << pc.points[i].x << std::endl << "y= " << pc.points[i].y << std::endl << "z= " << pc.points[i].z << "\n\n\n";
-			if(pc.points[i].y < min_point.y){
-				min_point.x= pc.points[i].x;
-				min_point.y= pc.points[i].y;
-				min_point.z= pc.points[i].z;
-			}
-		 	if(pc.points[i].y > max_point.y){
-				max_point.x= pc.points[i].x;
-				max_point.y= pc.points[i].y;
-				max_point.z= pc.points[i].z;
-			}
-		}
-		// std::cout << "MAX y= " << max_point.y << std::endl << "x= " << max_point.x << std::endl << "z= " << max_point.z << std::endl << std::endl;
-		// std::cout << "MIN y= " << min_point.y << std::endl << "x= " << min_point.x << std::endl << "z= " << min_point.z << std::endl << std::endl;
-
-		//angle calculation in rads [0,2pi] starting from upper-left quadrant. 		! x,y are reversed because of laserscan's reversed x,y axes
-		angle_l= atan2(min_point.x, min_point.y);
-		angle_r= atan2(max_point.x, max_point.y);
-
-		//conversion to center-based angles
+std::pair<double,double> angle_calculation(double angle_l, double angle_r){
+	//conversion to center-based angles			!A,B,C,D are the quadrants, starting from upper-left quadrant and moving clockwise.
+		double c_angle_l, c_angle_r;
 		if(angle_l > PI/2 && angle_l < PI){			//A
 			c_angle_l= - ( angle_l - PI/2 );
 		}
@@ -133,12 +69,102 @@ void pcl_seg_Callback(const pointcloud_msgs::PointCloud2_Segments& msg){
 		else if(angle_r == -PI/2){			
 			c_angle_r= PI;
 		}
+		std::pair<double,double> pair(c_angle_l, c_angle_r);
+		return pair;
 
-		// std::cout << "min angle: " << angle_l*180/PI << "\t\tcenter based: " << c_angle_l*180/PI << std::endl;
-		// std::cout << "max angle: " << angle_r*180/PI << "\t\tcenter based: " << c_angle_r*180/PI << std::endl;
-	
+}
+
+// typedef pcl::PointCloud<pcl::PointXYZ> PointCloud;
+
+// void pcl_Callback(const PointCloud::ConstPtr& msg)
+// {
+//   printf ("Cloud: width = %d, height = %d\n", msg->width, msg->height);
+//   BOOST_FOREACH (const pcl::PointXYZ& pt, msg->points)
+//     printf ("\t(%f, %f, %f)\n", pt.x, pt.y, pt.z);
+// }
+
+
+
+void pcl_seg_Callback(const pointcloud_msgs::PointCloud2_Segments& msg){
+	//pointcloud_msgs::PointCloud2_Segments msg_out;
+
+	while(got_message == 1){
+		1;
+		std::cout << "In seg loop..." << std::endl;
+	}
+	std::vector<std::pair<double,double>> msg_vector;
+	double angle_min = msg.angle_min;
+	double angle_max = msg.angle_max;
+	double angle_increment = msg.angle_increment;   
+
+    // Eigen::Vector4f cluster_centroid;
+    // pcl::compute3DCentroid ( pc , cluster_centroid);	// (x,y,z,1)
+    // //cluster_centroid_vec.push_back( cluster_centroid );
+
+    // std::cout << "Centroid of first cluster is:\nx= " << cluster_centroid(0) << "\ny= " << cluster_centroid(1) << "\nz= " << cluster_centroid(2) << "\nlast= " << cluster_centroid(3) << "\n\n\n\n";
+
+	// //pcl1 test
+	// Eigen::Vector4f cluster_centroid;
+	// sensor_msgs::PointCloud conv_msg;
+	// convertPointCloud2ToPointCloud(msg.clusters[0], conv_msg);
+
+ //    Eigen::Vector4f cluster_centroid;
+	// convertPointCloud2ToPointCloud( msg.clusters[0], conv_msg);
+ //    pcl::compute3DCentroid( cloud2 , cluster_centroid);
+
+	// while(i < msg.cluster_id.size()){
+	// 	std::cout << "i= " << i << ": " << msg.cluster_id[i] << std::endl << std::endl;
+	// 	i++;
+	// }
+	for (int j=0; j < msg.clusters.size(); j++){		//for every cluster
+		double angle_l, angle_r, c_angle_l, c_angle_r;
+		std::pair<double,double> angle_pair(0,0);
+
+		pcl::PCLPointCloud2 pc2;
+    	pcl_conversions::toPCL ( msg.clusters[j] , pc2 );	//from sensor_msgs::pointcloud2 to pcl::pointcloud2
+
+    	pcl::PointCloud<pcl::PointXYZ> pc;
+    	pcl::fromPCLPointCloud2 ( pc2 , pc );	//from pcl::pointcloud2 to pcl::pointcloud
+    	//pc= clusters[j] in pointcloud format
+
+    	pcl::PointXYZ min_point(pc.points[0]);
+    	pcl::PointXYZ max_point(pc.points[0]);
+
+		for (int i=1; i < pc.points.size(); i++){		//for every point in the cluster 	
+			//std::cout << "x= " << pc.points[i].x << std::endl << "y= " << pc.points[i].y << std::endl << "z= " << pc.points[i].z << "\n\n\n";
+			if(pc.points[i].y < min_point.y){
+				min_point.x= pc.points[i].x;
+				min_point.y= pc.points[i].y;
+				min_point.z= pc.points[i].z;
+			}
+		 	if(pc.points[i].y > max_point.y){
+				max_point.x= pc.points[i].x;
+				max_point.y= pc.points[i].y;
+				max_point.z= pc.points[i].z;
+			}
+		}
+		// std::cout << "MAX y= " << max_point.y << std::endl << "x= " << max_point.x << std::endl << "z= " << max_point.z << std::endl << std::endl;
+		// std::cout << "MIN y= " << min_point.y << std::endl << "x= " << min_point.x << std::endl << "z= " << min_point.z << std::endl << std::endl;
+
+		//angle calculation in rads [0,2pi] starting from upper-left quadrant. 		! x,y are reversed because of laserscan's reversed x,y axes
+		angle_l= atan2(min_point.x, min_point.y);
+		angle_r= atan2(max_point.x, max_point.y);
+
+		angle_pair= angle_calculation(angle_l, angle_r);
+		msg_vector.push_back( angle_calculation(angle_l, angle_r) );
+
+		std::cout << "center based min: " << angle_pair.first*180/PI << std::endl;
+		std::cout << "center based min in vector: " << msg_vector.at(j).first*180/PI << std::endl << std::endl;
+		//std::cout << "center based min in global vector: " << pair_vector.at(j).first*180/PI << std::endl << std::endl;
+
+		std::cout << "center based max: " << angle_pair.second*180/PI << std::endl;
+		std::cout << "center based max in vector: " << msg_vector.at(j).second*180/PI << std::endl<< std::endl<< std::endl<< std::endl;
+		//std::cout << "center based max in global vector: " << pair_vector.at(j).second*180/PI << std::endl<< std::endl<< std::endl<< std::endl;
+		//std::cout << "New Angle Pair!!!" << std::endl;
 
 	}
+	std::cout << "FINISHED MESSAGE\n\n" << std::endl;
+	got_message = 1;
 	// std::cout << "HEADER INFO BELOW:\n\n" << msg.header<< std::endl;
 	// std::cout << "FIRST STAMP:\n\n" << msg.first_stamp << std::endl;
 
@@ -185,6 +211,10 @@ void pcl_seg_Callback(const pointcloud_msgs::PointCloud2_Segments& msg){
 
 
 void videoCallback(const sensor_msgs::ImageConstPtr& msg){
+	// while( got_message == 0 ){
+	// 	1;
+	// 	//std::cout << "In video loop..." << std::endl;
+	// }
 	std_msgs::Header h = msg->header;
 	sensor_msgs::Image new_msg;
   try
@@ -192,6 +222,9 @@ void videoCallback(const sensor_msgs::ImageConstPtr& msg){
     //cv::imshow("view", cv_bridge::toCvShare(msg, "bgr8")->image);
     //cv::waitKey(30);
     cv_bridge::CvImagePtr cv_ptr;
+
+    //std::cout << "New Video Frame!" << std::endl;
+
     try{
       cv_ptr = cv_bridge::toCvCopy(msg, "bgr8");
       cv::imshow("view",cv_ptr->image);
@@ -244,12 +277,14 @@ void videoCallback(const sensor_msgs::ImageConstPtr& msg){
 
     //tpub.publish(new_msg);
     pub.publish(set);
+    got_message = 0;
     
   }
   catch (cv_bridge::Exception& e)
   {
     ROS_ERROR("Could not convert from '%s' to 'bgr8'.", msg->encoding.c_str());
   }
+
 
 }
 
@@ -279,10 +314,12 @@ int main(int argc, char **argv)
   //ROS_INFO("angle_max is 2.345\n");
 
   cv::namedWindow("view");
+  std::cout << "New Window: view" << std::endl;
   // cv::namedWindow("view2");
   // cv::namedWindow("view3");
   // cv::namedWindow("view4");
   cv::namedWindow("view5");
+  std::cout << "New Window: view5" << std::endl;
   image_transport::ImageTransport it(nh);
 
   //advertise to output topic
@@ -293,6 +330,7 @@ int main(int argc, char **argv)
   // image_transport::Subscriber image_sub = it.subscribe("camera/image", 50, imageCallback);
   // ros::Subscriber pcl_sub = nh.subscribe<PointCloud>("points2", 1, pcl_Callback);
 
+  std::cout << "reached subscribers point" << std::endl;
   ros::Subscriber pcl_seg_sub = nh.subscribe<const pointcloud_msgs::PointCloud2_Segments&>("pointcloud2_cluster_tracking/clusters", 1, pcl_seg_Callback);
   image_transport::Subscriber video_sub = it.subscribe("camera/rgb/image_raw", 50, videoCallback);		//  usb_cam/image_raw gia to rosbag me to video mono.
   ros::Subscriber laser_sub = nh.subscribe("scan",50, laserCallback);
