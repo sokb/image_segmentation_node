@@ -92,7 +92,8 @@ void pcl_seg_Callback(const pointcloud_msgs::PointCloud2_Segments& msg){
 		1;
 		std::cout << "In seg loop..." << std::endl;
 	}
-	std::vector<std::pair<double,double>> msg_vector;
+	pair_vector.clear();
+	//std::vector<std::pair<double,double>> msg_vector;
 	double angle_min = msg.angle_min;
 	double angle_max = msg.angle_max;
 	double angle_increment = msg.angle_increment;   
@@ -151,18 +152,27 @@ void pcl_seg_Callback(const pointcloud_msgs::PointCloud2_Segments& msg){
 		angle_r= atan2(max_point.x, max_point.y);
 
 		angle_pair= angle_calculation(angle_l, angle_r);
-		msg_vector.push_back( angle_calculation(angle_l, angle_r) );
+		//msg_vector.push_back( angle_calculation(angle_l, angle_r) );
+		pair_vector.push_back( angle_calculation(angle_l, angle_r) );
 
-		std::cout << "center based min: " << angle_pair.first*180/PI << std::endl;
-		std::cout << "center based min in vector: " << msg_vector.at(j).first*180/PI << std::endl << std::endl;
+		//std::cout << "min: " << angle_l*180/PI << std::endl;
+		//std::cout << "center based min: " << angle_pair.first*180/PI << std::endl;
+		//std::cout << "center based min in msg_vector: " << msg_vector.at(j).first*180/PI << std::endl << std::endl;
 		//std::cout << "center based min in global vector: " << pair_vector.at(j).first*180/PI << std::endl << std::endl;
 
-		std::cout << "center based max: " << angle_pair.second*180/PI << std::endl;
-		std::cout << "center based max in vector: " << msg_vector.at(j).second*180/PI << std::endl<< std::endl<< std::endl<< std::endl;
-		//std::cout << "center based max in global vector: " << pair_vector.at(j).second*180/PI << std::endl<< std::endl<< std::endl<< std::endl;
+		//std::cout << "max: " << angle_r*180/PI << std::endl;
+		//std::cout << "center based max in msg_vector: " << msg_vector.at(j).second*180/PI << std::endl;
+
 		//std::cout << "New Angle Pair!!!" << std::endl;
 
+		//std::cout << "center based max: " << angle_pair.second*180/PI << std::endl;
+		//std::cout << "center based max in global vector: " << pair_vector.at(j).second*180/PI << std::endl<< std::endl<< std::endl<< std::endl;
+		
 	}
+
+	std::cout << "!!!!!!!!!!\nNo of clusters: " << msg.cluster_id.size() << std::endl;
+	std::cout << "No of cluster_ids: " << msg.cluster_id.size() << std::endl;
+	std::cout << "Size of global vector: " << pair_vector.size() << "\n!!!!!!!!!!\n\n";
 	std::cout << "FINISHED MESSAGE\n\n" << std::endl;
 	got_message = 1;
 	// std::cout << "HEADER INFO BELOW:\n\n" << msg.header<< std::endl;
@@ -255,14 +265,18 @@ void videoCallback(const sensor_msgs::ImageConstPtr& msg){
 
 
     image_segmentation_node::ImageSet set;
-    //convert to sensor_msgs/Image
-    sensor_msgs::ImagePtr msg1 = cv_bridge::CvImage(std_msgs::Header(), "bgr8", roi).toImageMsg();
-    set.data[0]= *msg1;
-    msg1 = cv_bridge::CvImage(std_msgs::Header(), "bgr8", roi2).toImageMsg();
-    set.data[1]= *msg1;
-    msg1 = cv_bridge::CvImage(std_msgs::Header(), "bgr8", roi3).toImageMsg();
-    set.data[2]= *msg1;
-    //new_msg=set.data[0];
+    for (int i=0; i < pair_vector.size(); i++){
+    	
+		//convert to sensor_msgs/Image
+    	sensor_msgs::ImagePtr msg1 = cv_bridge::CvImage(std_msgs::Header(), "bgr8", roi).toImageMsg();
+    	set.data[0]= *msg1;
+    	msg1 = cv_bridge::CvImage(std_msgs::Header(), "bgr8", roi2).toImageMsg();
+    	set.data[1]= *msg1;
+    	msg1 = cv_bridge::CvImage(std_msgs::Header(), "bgr8", roi3).toImageMsg();
+    	set.data[2]= *msg1;
+    	//new_msg=set.data[0];
+
+	}
 
     // cv::imshow("view2", roi);
     // cv::waitKey(30);
