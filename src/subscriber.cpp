@@ -25,6 +25,8 @@ image_transport::Publisher tpub;
 
 
 std::vector<std::pair<double,double>> pair_vector;
+sensor_msgs::Image latest_frame;
+
 int got_message = 0;
 const double PI = 3.141592653589793;
 
@@ -88,10 +90,10 @@ std::pair<double,double> angle_calculation(double angle_l, double angle_r){
 void pcl_seg_Callback(const pointcloud_msgs::PointCloud2_Segments& msg){
 	//pointcloud_msgs::PointCloud2_Segments msg_out;
 
-	while(got_message == 1){
-		1;
-		std::cout << "In seg loop..." << std::endl;
-	}
+	// while(got_message == 1){
+	// 	1;
+	// 	std::cout << "In seg loop..." << std::endl;
+	// }
 	pair_vector.clear();
 	//std::vector<std::pair<double,double>> msg_vector;
 	double angle_min = msg.angle_min;
@@ -117,6 +119,14 @@ void pcl_seg_Callback(const pointcloud_msgs::PointCloud2_Segments& msg){
 	// 	std::cout << "i= " << i << ": " << msg.cluster_id[i] << std::endl << std::endl;
 	// 	i++;
 	// }
+
+	//NEW WAY SEG**************************************
+
+	cv_bridge::CvImagePtr cv_ptr;
+	cv_ptr = cv_bridge::toCvCopy(latest_frame, "bgr8");
+	cv::imshow("view",cv_ptr->image);
+    cv::waitKey(30);
+
 	for (int j=0; j < msg.clusters.size(); j++){		//for every cluster
 		double angle_l, angle_r, c_angle_l, c_angle_r;
 		std::pair<double,double> angle_pair(0,0);
@@ -155,6 +165,10 @@ void pcl_seg_Callback(const pointcloud_msgs::PointCloud2_Segments& msg){
 		//msg_vector.push_back( angle_calculation(angle_l, angle_r) );
 		pair_vector.push_back( angle_calculation(angle_l, angle_r) );
 
+		
+
+		
+
 		//std::cout << "min: " << angle_l*180/PI << std::endl;
 		//std::cout << "center based min: " << angle_pair.first*180/PI << std::endl;
 		//std::cout << "center based min in msg_vector: " << msg_vector.at(j).first*180/PI << std::endl << std::endl;
@@ -169,6 +183,53 @@ void pcl_seg_Callback(const pointcloud_msgs::PointCloud2_Segments& msg){
 		//std::cout << "center based max in global vector: " << pair_vector.at(j).second*180/PI << std::endl<< std::endl<< std::endl<< std::endl;
 		
 	}
+
+	//NEW WAY SEG 2**********************************
+	
+	double a_l= pair_vector.at(0).first;	//first: center-based left angle, second: center_based right angle
+	double a_r= pair_vector.at(0).second;
+	std::cout << "ANGLES:\nLEFT: " << a_l << "\nRIGHT: " << a_r << std::endl;
+
+	double cam_min= -PI/6, cam_max= PI/6;	// Orbbec Astra Pro wideness: PI/3 (60 degrees) total
+	int ratio= (cv_ptr->image.cols) / abs(cam_min)+abs(cam_max);	//	(width pixels) / (wideness)
+	int width_pixels;
+	std::cout << "Ratio:\t" << ratio << std::endl;
+	int center = (cv_ptr->image.cols)/2;
+	int x_l, x_r;
+
+	if( a_l < a_r ){
+		if( (a_l < cam_min && a_r < cam_min) || (a_l > cam_max && a_r > cam_max) ){	//out of range
+			std::cout << "out of range!" << std::endl;
+		}
+		else if( a_l < cam_min && a_r > cam_max ){	//bigger than image size
+			std::cout << "bigger than image size!" << std::endl;
+			x_l= -center;
+			x_r= center;
+		}
+		else if( a_l < cam_min && a_r > cam_min && a_r < cam_max ){	//left side out of range
+			x_l= -center;
+			x_r= a_r*ratio;	//x_r, x_l: pixel distance from center of image (can be either positive or negative)
+		}
+		else if( a_l < cam_min && a_r > cam_min && a_r < cam_max ){	//right side out of range
+			x_r= center;
+			x_l= a_l*ratio;
+		}
+		else if( a_l > cam_min && a_l < cam_max && a_r > cam_min && a_r < cam_max ){	//in range
+			x_l= a_l*ratio;
+			x_r= a_r*ratio;
+		}
+		else{
+			std::cout << "??????" << std::endl;
+		}
+	}
+	else{
+		std::cout << "angle mistake" << std::endl;
+	}
+	cv::Rect myROIseg(0, 0, 100, cv_ptr->image.rows); 
+    cv::Mat roiseg = cv::Mat(cv_ptr->image,myROIseg);
+	cv::imshow("cluster1",roiseg);
+    cv::waitKey(30);
+
 
 	std::cout << "!!!!!!!!!!\nNo of clusters: " << msg.cluster_id.size() << std::endl;
 	std::cout << "No of cluster_ids: " << msg.cluster_id.size() << std::endl;
@@ -227,6 +288,12 @@ void videoCallback(const sensor_msgs::ImageConstPtr& msg){
 	// }
 	std_msgs::Header h = msg->header;
 	sensor_msgs::Image new_msg;
+
+
+	//new way...
+	latest_frame= *msg;
+
+
   try
   {
     //cv::imshow("view", cv_bridge::toCvShare(msg, "bgr8")->image);
@@ -237,8 +304,8 @@ void videoCallback(const sensor_msgs::ImageConstPtr& msg){
 
     try{
       cv_ptr = cv_bridge::toCvCopy(msg, "bgr8");
-      cv::imshow("view",cv_ptr->image);
-      cv::waitKey(30);
+      // cv::imshow("view",cv_ptr->image);
+      // cv::waitKey(30);
     }
     catch (cv_bridge::Exception& e){
       ROS_ERROR("cv_bridge exception: %s", e.what());
@@ -248,8 +315,8 @@ void videoCallback(const sensor_msgs::ImageConstPtr& msg){
     int center = (cv_ptr->image.cols)/2;
 
     //cut a rectangle
-    cv::Rect myROI(0, 0, (cv_ptr->image.cols)/3, cv_ptr->image.rows); 
-    cv::Mat roi = cv::Mat(cv_ptr->image,myROI);
+    //cv::Rect myROI(0, 0, (cv_ptr->image.cols)/3, cv_ptr->image.rows); 
+    //cv::Mat roi = cv::Mat(cv_ptr->image,myROI);
 
     cv::Rect myROI2(cv_ptr->image.cols/3, 0, cv_ptr->image.cols/3,cv_ptr->image.rows); 
     cv::Mat roi2 = cv::Mat(cv_ptr->image,myROI2);
@@ -260,23 +327,33 @@ void videoCallback(const sensor_msgs::ImageConstPtr& msg){
 
     cv::Rect myROI4(0, 0, 150, 150); 
     cv::Mat roi4 = cv::Mat(cv_ptr->image,myROI4);
-    cv::imshow("view5", roi4);
-    cv::waitKey(30);
-
+    // cv::imshow("view5", roi4);
+    // cv::waitKey(30);
 
     image_segmentation_node::ImageSet set;
-    for (int i=0; i < pair_vector.size(); i++){
-    	
-		//convert to sensor_msgs/Image
-    	sensor_msgs::ImagePtr msg1 = cv_bridge::CvImage(std_msgs::Header(), "bgr8", roi).toImageMsg();
-    	set.data[0]= *msg1;
-    	msg1 = cv_bridge::CvImage(std_msgs::Header(), "bgr8", roi2).toImageMsg();
-    	set.data[1]= *msg1;
-    	msg1 = cv_bridge::CvImage(std_msgs::Header(), "bgr8", roi3).toImageMsg();
-    	set.data[2]= *msg1;
-    	//new_msg=set.data[0];
 
-	}
+    cv::Rect myROI(0, 0, (cv_ptr->image.cols)/3, cv_ptr->image.rows); 
+    cv::Mat roi = cv::Mat(cv_ptr->image,myROI);
+    sensor_msgs::ImagePtr msg1 = cv_bridge::CvImage(std_msgs::Header(), "bgr8", roi).toImageMsg();
+    set.data[0]= *msg1;
+
+ //    for (int i=0; i < pair_vector.size(); i++){
+    	
+ //    	// cv::Rect myROI(0, 0, 50, 50); 
+ //    	// cv::Mat roi = cv::Mat(cv_ptr->image,myROI);
+
+	// 	//convert to sensor_msgs/Image
+ //    	sensor_msgs::ImagePtr msg1 = cv_bridge::CvImage(std_msgs::Header(), "bgr8", roi).toImageMsg();
+ //    	set.data[i]= *msg1;
+
+ //    	//...
+ //    	// msg1 = cv_bridge::CvImage(std_msgs::Header(), "bgr8", roi2).toImageMsg();
+ //    	// set.data[1]= *msg1;
+ //    	// msg1 = cv_bridge::CvImage(std_msgs::Header(), "bgr8", roi3).toImageMsg();
+ //    	// set.data[2]= *msg1;
+ //    	//new_msg=set.data[0];
+
+	// }
 
     // cv::imshow("view2", roi);
     // cv::waitKey(30);
@@ -290,7 +367,8 @@ void videoCallback(const sensor_msgs::ImageConstPtr& msg){
     //tpub.publish(msg1);
 
     //tpub.publish(new_msg);
-    pub.publish(set);
+
+    //pub.publish(set);	//PUBLISH
     got_message = 0;
     
   }
@@ -332,8 +410,9 @@ int main(int argc, char **argv)
   // cv::namedWindow("view2");
   // cv::namedWindow("view3");
   // cv::namedWindow("view4");
-  cv::namedWindow("view5");
-  std::cout << "New Window: view5" << std::endl;
+  //cv::namedWindow("view5");
+  cv::namedWindow("cluster1");
+  //std::cout << "New Window: view5" << std::endl;
   image_transport::ImageTransport it(nh);
 
   //advertise to output topic
@@ -361,5 +440,6 @@ int main(int argc, char **argv)
   // cv::destroyWindow("view2");
   // cv::destroyWindow("view3");
   // cv::destroyWindow("view4");
-  cv::destroyWindow("view5");
+  //cv::destroyWindow("view5");
+  cv::namedWindow("cluster1");
 }
