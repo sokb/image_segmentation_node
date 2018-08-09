@@ -19,6 +19,7 @@
 #include <pcl/common/centroid.h>
 
 #include <pointcloud_msgs/PointCloud2_Segments.h>
+#include <image_msgs/Image_Segments.h>
 
 ros::Publisher pub;
 image_transport::Publisher tpub;
@@ -40,7 +41,7 @@ std::pair<double,double> angle_calculation(double angle_l, double angle_r){
 			c_angle_l= PI/2 - angle_l;
 		}
 		else if(angle_l > -PI && angle_l < -PI/2){	//D
-			c_angle_l= -( 3*PI/2 +angle_l );
+			c_angle_l= -( 3*PI/2 + angle_l );
 		}
 		else if(angle_l == PI/2){			
 			c_angle_l= 0;
@@ -141,7 +142,9 @@ void pcl_seg_Callback(const pointcloud_msgs::PointCloud2_Segments& msg){
     	pcl::PointXYZ min_point(pc.points[0]);
     	pcl::PointXYZ max_point(pc.points[0]);
 
-		for (int i=1; i < pc.points.size(); i++){		//for every point in the cluster 	
+    	std::cout << "\n\n\nSTART*****\noriginal min,max y: " << min_point.y << std::endl;
+
+		for (int i=1; i < pc.points.size(); i++){		//for every point in the cluster	
 			//std::cout << "x= " << pc.points[i].x << std::endl << "y= " << pc.points[i].y << std::endl << "z= " << pc.points[i].z << "\n\n\n";
 			if(pc.points[i].y < min_point.y){
 				min_point.x= pc.points[i].x;
@@ -157,17 +160,76 @@ void pcl_seg_Callback(const pointcloud_msgs::PointCloud2_Segments& msg){
 		// std::cout << "MAX y= " << max_point.y << std::endl << "x= " << max_point.x << std::endl << "z= " << max_point.z << std::endl << std::endl;
 		// std::cout << "MIN y= " << min_point.y << std::endl << "x= " << min_point.x << std::endl << "z= " << min_point.z << std::endl << std::endl;
 
+		std::cout << "Min y is: " << min_point.y << "\nMax y is: " << max_point.y << std::endl;
+
 		//angle calculation in rads [0,2pi] starting from upper-left quadrant. 		! x,y are reversed because of laserscan's reversed x,y axes
 		angle_l= atan2(min_point.x, min_point.y);
 		angle_r= atan2(max_point.x, max_point.y);
 
-		angle_pair= angle_calculation(angle_l, angle_r);
+		std::cout << "Not centered angle_l is: " << angle_l << "\nNot centered angle_r is: " << angle_r << std::endl;
+
+		angle_pair= angle_calculation(angle_l, angle_r);	//conversion to center-based angles
+
+		std::cout << "Centered angle_l is: " << angle_pair.first << "\nCentered angle_r is: " << angle_pair.second << std::endl;
+
 		//msg_vector.push_back( angle_calculation(angle_l, angle_r) );
-		pair_vector.push_back( angle_calculation(angle_l, angle_r) );
+		pair_vector.push_back( angle_calculation(angle_l, angle_r) );	
 
-		
+		//TRYING IT INSIDE THE FOR LOOP
+		double a_l= pair_vector.at(j).first;	//first: center-based left angle, second: center_based right angle
+		double a_r= pair_vector.at(j).second;
+		std::cout << "ANGLES:\nLEFT: " << a_l << "\nRIGHT: " << a_r << std::endl;
 
-		
+		double cam_min= -PI/6, cam_max= PI/6;	// Orbbec Astra Pro wideness: PI/3 (60 degrees) total
+		std::cout << "Image.cols (width)= " << cv_ptr->image.cols << "\nabs(cam_min)= " << abs(cam_min) << "\nabs(cam_max)= " << abs(cam_max) << std::endl;
+		int ratio= (cv_ptr->image.cols) / (abs(cam_min)+abs(cam_max)) ;	//	(width pixels) / (wideness)
+		std::cout << "Ratio:\t" << ratio << std::endl;
+		int center = (cv_ptr->image.cols)/2;
+		int x_l, x_r;
+
+		// a_r not necessarily greater than a_l
+		if( a_l < a_r ){
+			if( (a_l < cam_min && a_r < cam_min) || (a_l > cam_max && a_r > cam_max) ){	//out of range
+				std::cout << "out of range!" << std::endl;
+				continue;
+			}
+			else if( a_l < cam_min && a_r > cam_max ){	//bigger than image size
+				std::cout << "bigger than image size!" << std::endl;
+				x_l= -center;
+				x_r= center;
+			}
+			else if( a_l < cam_min && a_r > cam_min && a_r < cam_max ){	//left side out of range
+				std::cout << "left side out of range!" << std::endl;
+				x_l= -center;
+				x_r= a_r*ratio;	//x_r, x_l: pixel distance from center of image (can be either positive or negative)
+			}
+			else if( a_r > cam_max && a_l > cam_min && a_l < cam_max ){	//right side out of range
+				std::cout << "right side out of range!" << std::endl;
+				x_r= center;
+				x_l= a_l*ratio;
+			}
+			else if( a_l > cam_min && a_l < cam_max && a_r > cam_min && a_r < cam_max ){	//in range
+				std::cout << "in range!" << std::endl;
+				x_l= a_l*ratio;
+				x_r= a_r*ratio;
+			}
+			else{
+				std::cout << "??????" << std::endl;
+				continue;
+			}
+		}
+		else{
+			std::cout << "angle mistake" << std::endl;
+			continue;
+		}
+
+		int width_pixels= x_r - x_l;
+		int offset= center + x_l;
+		std::cout << "\n\nx_l= " << x_l << "\nx_r= " << x_r << "\nwidth_pixels= " << width_pixels << "\noffset= " << offset << "\n\n\n\n";
+		cv::Rect myROIseg(offset, 0, width_pixels, cv_ptr->image.rows); 
+	    cv::Mat roiseg = cv::Mat(cv_ptr->image,myROIseg);
+		cv::imshow("cluster1",roiseg);
+	    cv::waitKey(30);	
 
 		//std::cout << "min: " << angle_l*180/PI << std::endl;
 		//std::cout << "center based min: " << angle_pair.first*180/PI << std::endl;
@@ -184,58 +246,6 @@ void pcl_seg_Callback(const pointcloud_msgs::PointCloud2_Segments& msg){
 		
 	}
 
-	//NEW WAY SEG 2**********************************
-	
-	double a_l= pair_vector.at(0).first;	//first: center-based left angle, second: center_based right angle
-	double a_r= pair_vector.at(0).second;
-	std::cout << "ANGLES:\nLEFT: " << a_l << "\nRIGHT: " << a_r << std::endl;
-
-	double cam_min= -PI/6, cam_max= PI/6;	// Orbbec Astra Pro wideness: PI/3 (60 degrees) total
-	int ratio= (cv_ptr->image.cols) / abs(cam_min)+abs(cam_max);	//	(width pixels) / (wideness)
-	int width_pixels;
-	std::cout << "Ratio:\t" << ratio << std::endl;
-	int center = (cv_ptr->image.cols)/2;
-	int x_l, x_r;
-
-	if( a_l < a_r ){
-		if( (a_l < cam_min && a_r < cam_min) || (a_l > cam_max && a_r > cam_max) ){	//out of range
-			std::cout << "out of range!" << std::endl;
-		}
-		else if( a_l < cam_min && a_r > cam_max ){	//bigger than image size
-			std::cout << "bigger than image size!" << std::endl;
-			x_l= -center;
-			x_r= center;
-		}
-		else if( a_l < cam_min && a_r > cam_min && a_r < cam_max ){	//left side out of range
-			x_l= -center;
-			x_r= a_r*ratio;	//x_r, x_l: pixel distance from center of image (can be either positive or negative)
-		}
-		else if( a_l < cam_min && a_r > cam_min && a_r < cam_max ){	//right side out of range
-			x_r= center;
-			x_l= a_l*ratio;
-		}
-		else if( a_l > cam_min && a_l < cam_max && a_r > cam_min && a_r < cam_max ){	//in range
-			x_l= a_l*ratio;
-			x_r= a_r*ratio;
-		}
-		else{
-			std::cout << "??????" << std::endl;
-		}
-	}
-	else{
-		std::cout << "angle mistake" << std::endl;
-	}
-	cv::Rect myROIseg(0, 0, 100, cv_ptr->image.rows); 
-    cv::Mat roiseg = cv::Mat(cv_ptr->image,myROIseg);
-	cv::imshow("cluster1",roiseg);
-    cv::waitKey(30);
-
-
-	std::cout << "!!!!!!!!!!\nNo of clusters: " << msg.cluster_id.size() << std::endl;
-	std::cout << "No of cluster_ids: " << msg.cluster_id.size() << std::endl;
-	std::cout << "Size of global vector: " << pair_vector.size() << "\n!!!!!!!!!!\n\n";
-	std::cout << "FINISHED MESSAGE\n\n" << std::endl;
-	got_message = 1;
 	// std::cout << "HEADER INFO BELOW:\n\n" << msg.header<< std::endl;
 	// std::cout << "FIRST STAMP:\n\n" << msg.first_stamp << std::endl;
 
