@@ -29,6 +29,7 @@ std::vector<std::pair<double,double>> pair_vector;
 sensor_msgs::Image latest_frame;
 
 int got_message = 0;
+int oor=0;
 const double PI = 3.141592653589793;
 
 std::pair<double,double> angle_calculation(double angle_l, double angle_r){
@@ -161,6 +162,7 @@ void pcl_seg_Callback(const pointcloud_msgs::PointCloud2_Segments& msg){
 		// std::cout << "MIN y= " << min_point.y << std::endl << "x= " << min_point.x << std::endl << "z= " << min_point.z << std::endl << std::endl;
 
 		std::cout << "Min y is: " << min_point.y << "\nMax y is: " << max_point.y << std::endl;
+		std::cout << "Min x is: " << min_point.x << "\nMax x is: " << max_point.x << std::endl;
 
 		//angle calculation in rads [0,2pi] starting from upper-left quadrant. 		! x,y are reversed because of laserscan's reversed x,y axes
 		angle_l= atan2(min_point.x, min_point.y);
@@ -176,6 +178,17 @@ void pcl_seg_Callback(const pointcloud_msgs::PointCloud2_Segments& msg){
 		pair_vector.push_back( angle_calculation(angle_l, angle_r) );	
 
 		//TRYING IT INSIDE THE FOR LOOP
+		double temp;
+		if(pair_vector.at(j).first > pair_vector.at(j).second){		// case: ymin<ymax but angle_l>angle_r
+			std::cout << "SWITCHED!\n";
+			temp= pair_vector.at(j).first;	// switch them
+			pair_vector.at(j).first= pair_vector.at(j).second;
+			pair_vector.at(j).second= temp;
+		}
+		if( oor==1 && j!=0){
+			std::cout << "*Previous (empty) cell*\n*first: " << pair_vector.at(j-1).first << "\n*second: " << pair_vector.at(j-1).second << std::endl;
+			oor=0;
+		}
 		double a_l= pair_vector.at(j).first;	//first: center-based left angle, second: center_based right angle
 		double a_r= pair_vector.at(j).second;
 		std::cout << "ANGLES:\nLEFT: " << a_l << "\nRIGHT: " << a_r << std::endl;
@@ -187,10 +200,11 @@ void pcl_seg_Callback(const pointcloud_msgs::PointCloud2_Segments& msg){
 		int center = (cv_ptr->image.cols)/2;
 		int x_l, x_r;
 
-		// a_r not necessarily greater than a_l
+		// a_r not necessarily greater than a_l (a_l, a_r are the centered angles)
 		if( a_l < a_r ){
 			if( (a_l < cam_min && a_r < cam_min) || (a_l > cam_max && a_r > cam_max) ){	//out of range
 				std::cout << "out of range!" << std::endl;
+				oor=1;
 				continue;
 			}
 			else if( a_l < cam_min && a_r > cam_max ){	//bigger than image size
@@ -215,11 +229,23 @@ void pcl_seg_Callback(const pointcloud_msgs::PointCloud2_Segments& msg){
 			}
 			else{
 				std::cout << "??????" << std::endl;
+				oor=1;
 				continue;
 			}
 		}
 		else{
-			std::cout << "angle mistake" << std::endl;
+			if( a_l == a_r ){
+				if( angle_l != angle_r ){
+					std::cout << "centered angle_l = centered angle_r and that's not ok" << std::endl;
+				}
+				else{
+					std::cout << "centered angle_l = centered angle_r and that's ok??" << std::endl;
+				}
+			}
+			else{
+				std::cout << "angle mistake" << std::endl;
+			}
+			oor=1;
 			continue;
 		}
 
