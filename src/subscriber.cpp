@@ -96,6 +96,11 @@ void pcl_seg_Callback(const pointcloud_msgs::PointCloud2_Segments& msg){
 	// 	1;
 	// 	std::cout << "In seg loop..." << std::endl;
 	// }
+
+	image_msgs::Image_Segments out_msg;
+
+	std::vector<std::pair<double,double>> pixel_vector;
+
 	pair_vector.clear();
 	//std::vector<std::pair<double,double>> msg_vector;
 	double angle_min = msg.angle_min;
@@ -130,8 +135,10 @@ void pcl_seg_Callback(const pointcloud_msgs::PointCloud2_Segments& msg){
     cv::waitKey(30);
 
 	for (int j=0; j < msg.clusters.size(); j++){		//for every cluster
+		int image_counter=0;							//counter used for image_set array
 		double angle_l, angle_r, c_angle_l, c_angle_r;
 		std::pair<double,double> angle_pair(0,0);
+		std::pair<double,double> pixel_pair(0,0);
 
 		pcl::PCLPointCloud2 pc2;
     	pcl_conversions::toPCL ( msg.clusters[j] , pc2 );	//from sensor_msgs::pointcloud2 to pcl::pointcloud2
@@ -177,9 +184,8 @@ void pcl_seg_Callback(const pointcloud_msgs::PointCloud2_Segments& msg){
 		//msg_vector.push_back( angle_calculation(angle_l, angle_r) );
 		pair_vector.push_back( angle_calculation(angle_l, angle_r) );	
 
-		//TRYING IT INSIDE THE FOR LOOP
 		double temp;
-		if(pair_vector.at(j).first > pair_vector.at(j).second){		// case: ymin<ymax but angle_l>angle_r
+		if(pair_vector.at(j).first > pair_vector.at(j).second){		// case: ymin < ymax but angle_l > angle_r
 			std::cout << "SWITCHED!\n";
 			temp= pair_vector.at(j).first;	// switch them
 			pair_vector.at(j).first= pair_vector.at(j).second;
@@ -205,32 +211,56 @@ void pcl_seg_Callback(const pointcloud_msgs::PointCloud2_Segments& msg){
 			if( (a_l < cam_min && a_r < cam_min) || (a_l > cam_max && a_r > cam_max) ){	//out of range
 				std::cout << "out of range!" << std::endl;
 				oor=1;
-				continue;
+
+				pixel_pair.first= NAN;
+				pixel_pair.second= NAN;
+				pixel_vector.push_back( pixel_pair );
+				//continue;
 			}
 			else if( a_l < cam_min && a_r > cam_max ){	//bigger than image size
 				std::cout << "bigger than image size!" << std::endl;
 				x_l= -center;
 				x_r= center;
+
+				pixel_pair.first= x_l;
+				pixel_pair.second= x_r;
+				pixel_vector.push_back( pixel_pair );
 			}
 			else if( a_l < cam_min && a_r > cam_min && a_r < cam_max ){	//left side out of range
 				std::cout << "left side out of range!" << std::endl;
 				x_l= -center;
 				x_r= a_r*ratio;	//x_r, x_l: pixel distance from center of image (can be either positive or negative)
+
+				pixel_pair.first= x_l;
+				pixel_pair.second= x_r;
+				pixel_vector.push_back( pixel_pair );
 			}
 			else if( a_r > cam_max && a_l > cam_min && a_l < cam_max ){	//right side out of range
 				std::cout << "right side out of range!" << std::endl;
 				x_r= center;
 				x_l= a_l*ratio;
+
+				pixel_pair.first= x_l;
+				pixel_pair.second= x_r;
+				pixel_vector.push_back( pixel_pair );
 			}
 			else if( a_l > cam_min && a_l < cam_max && a_r > cam_min && a_r < cam_max ){	//in range
 				std::cout << "in range!" << std::endl;
 				x_l= a_l*ratio;
 				x_r= a_r*ratio;
+
+				pixel_pair.first= x_l;
+				pixel_pair.second= x_r;
+				pixel_vector.push_back( pixel_pair );
 			}
 			else{
 				std::cout << "??????" << std::endl;
 				oor=1;
-				continue;
+
+				pixel_pair.first= NAN;
+				pixel_pair.second= NAN;
+				pixel_vector.push_back( pixel_pair );
+				//continue;
 			}
 		}
 		else{
@@ -239,23 +269,31 @@ void pcl_seg_Callback(const pointcloud_msgs::PointCloud2_Segments& msg){
 					std::cout << "centered angle_l = centered angle_r and that's not ok" << std::endl;
 				}
 				else{
-					std::cout << "centered angle_l = centered angle_r and that's ok??" << std::endl;
+					std::cout << "centered angle_l = centered angle_r and that's ok" << std::endl;
 				}
 			}
 			else{
 				std::cout << "angle mistake" << std::endl;
 			}
 			oor=1;
-			continue;
+			pixel_pair.first= NAN;
+			pixel_pair.second= NAN;
+			pixel_vector.push_back( pixel_pair );
+			//continue;
 		}
 
-		int width_pixels= x_r - x_l;
-		int offset= center + x_l;
-		std::cout << "\n\nx_l= " << x_l << "\nx_r= " << x_r << "\nwidth_pixels= " << width_pixels << "\noffset= " << offset << "\n\n\n\n";
-		cv::Rect myROIseg(offset, 0, width_pixels, cv_ptr->image.rows); 
-	    cv::Mat roiseg = cv::Mat(cv_ptr->image,myROIseg);
-		cv::imshow("cluster1",roiseg);
-	    cv::waitKey(30);	
+		int width_pixels, offset;
+
+		//can include the following in later 'else'
+		if( isnan(pixel_pair.first)==0 && isnan(pixel_pair.second)==0 ){
+			width_pixels= x_r - x_l;
+			offset= center + x_l;
+			std::cout << "\n\nx_l= " << x_l << "\nx_r= " << x_r << "\nwidth_pixels= " << width_pixels << "\noffset= " << offset << "\n\n\n\n";
+			cv::Rect myROIseg(offset, 0, width_pixels, cv_ptr->image.rows); 
+	    	cv::Mat roiseg = cv::Mat(cv_ptr->image,myROIseg);
+			cv::imshow("cluster1",roiseg);
+	    	cv::waitKey(30);
+	    }	
 
 		//std::cout << "min: " << angle_l*180/PI << std::endl;
 		//std::cout << "center based min: " << angle_pair.first*180/PI << std::endl;
@@ -270,7 +308,51 @@ void pcl_seg_Callback(const pointcloud_msgs::PointCloud2_Segments& msg){
 		//std::cout << "center based max: " << angle_pair.second*180/PI << std::endl;
 		//std::cout << "center based max in global vector: " << pair_vector.at(j).second*180/PI << std::endl<< std::endl<< std::endl<< std::endl;
 		
+		if( isnan(pixel_pair.first) || isnan(pixel_pair.second ) ){	//tsekare an swsto
+			out_msg.has_image.push_back(0);
+		}
+		else{								//create message for publishing
+			out_msg.has_image.push_back(1);
+
+			cv_bridge::CvImagePtr cv_ptr_in;
+			cv_ptr_in = cv_bridge::toCvCopy(latest_frame, "bgr8");
+
+			cv::Rect myROIout(offset, 0, width_pixels, cv_ptr_in->image.rows); 
+	     	cv::Mat roiout = cv::Mat(cv_ptr_in->image,myROIout);
+	  		sensor_msgs::ImagePtr imgptr = cv_bridge::CvImage(std_msgs::Header(), "bgr8", roiout).toImageMsg();
+	  		
+	  		out_msg.image_set.push_back(*imgptr);
+
+	    	//CODE FROM VIDEO CALLBACK
+			//image_segmentation_node::ImageSet set;
+   			//cv::Rect myROI(0, 0, (cv_ptr->image.cols)/3, cv_ptr->image.rows); 
+   			//cv::Mat roi = cv::Mat(cv_ptr->image,myROI);
+   			//sensor_msgs::ImagePtr msg1 = cv_bridge::CvImage(std_msgs::Header(), "bgr8", roi).toImageMsg();
+   			//set.data[0]= *msg1;
+
+			//push back ston image_set
+			image_counter++;
+		}
 	}
+
+	std::cout << "\tSize of image set: " << out_msg.image_set.size() << std::endl;
+	std::cout << "No of clusters: " << msg.clusters.size() << std::endl;
+	std::cout << "pair_vector size: " << pair_vector.size() << "\npixel_vector size: " << pixel_vector.size() << std::endl;
+	if( pair_vector.size() == pixel_vector.size() && pixel_vector.size() == msg.clusters.size() ){
+			std::cout << "Same size!\n" << std::endl;
+	}
+	else{
+		std::cout << "Different size!\n" << std::endl;
+	}
+
+	
+	std::cout << "has_image size: " << out_msg.has_image.size() << std::endl;
+	std::cout << "has_image contents: [";
+	for(int c=0; c<out_msg.has_image.size(); c++){
+		std::cout << "," << out_msg.has_image[c];
+	}
+	std::cout << "]" << std::endl;
+
 
 	// std::cout << "HEADER INFO BELOW:\n\n" << msg.header<< std::endl;
 	// std::cout << "FIRST STAMP:\n\n" << msg.first_stamp << std::endl;
