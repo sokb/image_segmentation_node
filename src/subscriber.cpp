@@ -2,7 +2,7 @@
 #include <iostream>
 #include <stdlib.h>
 #include <math.h> 
-#include "image_segmentation_node/ImageSet.h"
+//#include "image_segmentation_node/ImageSet.h"
 
 #include <image_transport/image_transport.h>
 #include <opencv2/highgui/highgui.hpp>
@@ -354,6 +354,51 @@ void pcl_seg_Callback(const pointcloud_msgs::PointCloud2_Segments& msg){
 	std::cout << "]" << std::endl;
 
 
+	out_msg.factor = msg.factor;
+	out_msg.first_stamp = msg.first_stamp;
+	out_msg.overlap = msg.overlap;
+	out_msg.num_scans = msg.num_scans;
+	out_msg.angle_min = msg.angle_min;
+	out_msg.angle_max = msg.angle_max;
+	out_msg.angle_increment = msg.angle_increment;
+	out_msg.time_increment = msg.time_increment;
+	out_msg.range_min = msg.range_min;
+	out_msg.range_max = msg.range_max;
+	out_msg.scan_time = msg.scan_time;
+	out_msg.clusters = msg.clusters;
+	out_msg.cluster_id = msg.cluster_id;
+
+	std::cout << "\nCHECKING^^^^^\nIN cluster_id contents: [";
+	for(int c=0; c<msg.cluster_id.size(); c++){
+		std::cout << "," << msg.cluster_id[c];
+	}
+	std::cout << "]" << std::endl;
+
+
+	std::cout << "CHECKING^^^^^\nOUT cluster_id contents: [";
+	for(int c=0; c<out_msg.cluster_id.size(); c++){
+		std::cout << "," << out_msg.cluster_id[c];
+	}
+	std::cout << "]" << std::endl;
+
+	/*
+  header Header 	//copy this too?
+  sensor_msgs/PointCloud2[] clusters	!!!
+  int32 factor
+  time first_stamp
+  int32 overlap
+  int32[] cluster_id 	!!!
+  int32 num_scans
+  float32 angle_min
+  float32 angle_max
+  float32 angle_increment
+  float32 time_increment
+  float32 range_min
+  float32 range_max
+  float32 scan_time
+	*/
+
+	pub.publish(out_msg);
 	// std::cout << "HEADER INFO BELOW:\n\n" << msg.header<< std::endl;
 	// std::cout << "FIRST STAMP:\n\n" << msg.first_stamp << std::endl;
 
@@ -448,12 +493,12 @@ void videoCallback(const sensor_msgs::ImageConstPtr& msg){
     // cv::imshow("view5", roi4);
     // cv::waitKey(30);
 
-    image_segmentation_node::ImageSet set;
+    // image_segmentation_node::ImageSet set;
 
-    cv::Rect myROI(0, 0, (cv_ptr->image.cols)/3, cv_ptr->image.rows); 
-    cv::Mat roi = cv::Mat(cv_ptr->image,myROI);
-    sensor_msgs::ImagePtr msg1 = cv_bridge::CvImage(std_msgs::Header(), "bgr8", roi).toImageMsg();
-    set.data[0]= *msg1;
+    // cv::Rect myROI(0, 0, (cv_ptr->image.cols)/3, cv_ptr->image.rows); 
+    // cv::Mat roi = cv::Mat(cv_ptr->image,myROI);
+    // sensor_msgs::ImagePtr msg1 = cv_bridge::CvImage(std_msgs::Header(), "bgr8", roi).toImageMsg();
+    // set.data[0]= *msg1;
 
  //    for (int i=0; i < pair_vector.size(); i++){
     	
@@ -535,7 +580,7 @@ int main(int argc, char **argv)
 
   //advertise to output topic
   //image_transport::Publisher pub = it.advertise("seg_images", 2);
-  pub = nh.advertise<image_segmentation_node::ImageSet>("seg_images", 2);
+  pub = nh.advertise<image_msgs::Image_Segments>("seg_images", 2);
   tpub = it.advertise("normal_image", 2);
 
   // image_transport::Subscriber image_sub = it.subscribe("camera/image", 50, imageCallback);
