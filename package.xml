@@ -84,6 +84,7 @@
   <build_depend>libpcl-all-dev</build_depend>
   <exec_depend>libpcl-all</exec_depend>
 
+  <depend>image_msgs</depend>
 
   <!-- The export tag contains other, unspecified, tags -->
   <export>

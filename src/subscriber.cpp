@@ -90,12 +90,17 @@ std::pair<double,double> angle_calculation(double angle_l, double angle_r){
 
 
 void pcl_seg_Callback(const pointcloud_msgs::PointCloud2_Segments& msg){
+	
 	//pointcloud_msgs::PointCloud2_Segments msg_out;
 
 	// while(got_message == 1){
 	// 	1;
 	// 	std::cout << "In seg loop..." << std::endl;
 	// }
+
+	if(got_message == 0){
+		return;
+	}
 
 	image_msgs::Image_Segments out_msg;
 
@@ -131,10 +136,19 @@ void pcl_seg_Callback(const pointcloud_msgs::PointCloud2_Segments& msg){
 
 	cv_bridge::CvImagePtr cv_ptr;
 	cv_ptr = cv_bridge::toCvCopy(latest_frame, "bgr8");
+
+	got_message=0;
+
 	cv::imshow("view",cv_ptr->image);
     cv::waitKey(30);
 
 	for (int j=0; j < msg.clusters.size(); j++){		//for every cluster
+
+		//IMAGE 15
+		// std::vector<cv::Mat> img15;
+		// int c15=0;
+		
+
 		int image_counter=0;							//counter used for image_set array
 		double angle_l, angle_r, c_angle_l, c_angle_r;
 		std::pair<double,double> angle_pair(0,0);
@@ -323,6 +337,19 @@ void pcl_seg_Callback(const pointcloud_msgs::PointCloud2_Segments& msg){
 	  		
 	  		out_msg.image_set.push_back(*imgptr);
 
+	  		// IMAGE 15
+	  		// if(c15 < img15.size()){
+	  		// 	img15.push_back(roiout);
+	  		// 	c15++;
+	  		// }
+	  		
+	  		//IMAGE 15
+	  // 		for(int i=0; i<img15.size() && i<15;i++){
+			// 	std::string result= "c"+std::to_string(i);
+			// 	cv::imshow(result,img15.at(i));
+			// 	cv::waitKey(30);
+			// }
+
 	    	//CODE FROM VIDEO CALLBACK
 			//image_segmentation_node::ImageSet set;
    			//cv::Rect myROI(0, 0, (cv_ptr->image.cols)/3, cv_ptr->image.rows); 
@@ -398,6 +425,8 @@ void pcl_seg_Callback(const pointcloud_msgs::PointCloud2_Segments& msg){
   float32 scan_time
 	*/
 
+
+
 	pub.publish(out_msg);
 	// std::cout << "HEADER INFO BELOW:\n\n" << msg.header<< std::endl;
 	// std::cout << "FIRST STAMP:\n\n" << msg.first_stamp << std::endl;
@@ -455,6 +484,7 @@ void videoCallback(const sensor_msgs::ImageConstPtr& msg){
 
 	//new way...
 	latest_frame= *msg;
+	got_message=1;
 
 
   try
@@ -532,7 +562,6 @@ void videoCallback(const sensor_msgs::ImageConstPtr& msg){
     //tpub.publish(new_msg);
 
     //pub.publish(set);	//PUBLISH
-    got_message = 0;
     
   }
   catch (cv_bridge::Exception& e)
@@ -576,6 +605,25 @@ int main(int argc, char **argv)
   //cv::namedWindow("view5");
   cv::namedWindow("cluster1");
   //std::cout << "New Window: view5" << std::endl;
+
+  //IMAGE 15
+  // cv::namedWindow("c1");
+  // cv::namedWindow("c2");
+  // cv::namedWindow("c3");
+  // cv::namedWindow("c4");
+  // cv::namedWindow("c5");
+  // cv::namedWindow("c6");
+  // cv::namedWindow("c7");
+  // cv::namedWindow("c8");
+  // cv::namedWindow("c9");
+  // cv::namedWindow("c10");
+  // cv::namedWindow("c11");
+  // cv::namedWindow("c12");
+  // cv::namedWindow("c13");
+  // cv::namedWindow("c14");
+  // cv::namedWindow("c15");
+
+
   image_transport::ImageTransport it(nh);
 
   //advertise to output topic
@@ -604,5 +652,22 @@ int main(int argc, char **argv)
   // cv::destroyWindow("view3");
   // cv::destroyWindow("view4");
   //cv::destroyWindow("view5");
-  cv::namedWindow("cluster1");
+  cv::destroyWindow("cluster1");
+
+  //IMAGE 15
+  // cv::destroyWindow("c0");
+  // cv::destroyWindow("c1");
+  // cv::destroyWindow("c2");
+  // cv::destroyWindow("c3");
+  // cv::destroyWindow("c4");
+  // cv::destroyWindow("c5");
+  // cv::destroyWindow("c6");
+  // cv::destroyWindow("c7");
+  // cv::destroyWindow("c8");
+  // cv::destroyWindow("c9");
+  // cv::destroyWindow("c10");
+  // cv::destroyWindow("c11");
+  // cv::destroyWindow("c12");
+  // cv::destroyWindow("c13");
+  // cv::destroyWindow("c14");
 }

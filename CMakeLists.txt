@@ -15,6 +15,8 @@ find_package(catkin REQUIRED COMPONENTS
   image_transport
   message_generation
   sensor_msgs
+  image_msgs
+  pointcloud_msgs
 )
 
 find_package( PCL REQUIRED )
