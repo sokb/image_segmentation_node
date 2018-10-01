@@ -205,7 +205,7 @@ add_message_files(DIRECTORY msg
 )
 generate_messages(DEPENDENCIES sensor_msgs)
 
-catkin_package(CATKIN_DEPENDS cv_bridge image_transport message_runtime sensor_msgs)
+catkin_package(CATKIN_DEPENDS cv_bridge image_transport message_runtime sensor_msgs image_msgs)
 
 find_package(OpenCV)
 

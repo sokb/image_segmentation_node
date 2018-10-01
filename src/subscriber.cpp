@@ -110,29 +110,7 @@ void pcl_seg_Callback(const pointcloud_msgs::PointCloud2_Segments& msg){
 	//std::vector<std::pair<double,double>> msg_vector;
 	double angle_min = msg.angle_min;
 	double angle_max = msg.angle_max;
-	double angle_increment = msg.angle_increment;   
-
-    // Eigen::Vector4f cluster_centroid;
-    // pcl::compute3DCentroid ( pc , cluster_centroid);	// (x,y,z,1)
-    // //cluster_centroid_vec.push_back( cluster_centroid );
-
-    // std::cout << "Centroid of first cluster is:\nx= " << cluster_centroid(0) << "\ny= " << cluster_centroid(1) << "\nz= " << cluster_centroid(2) << "\nlast= " << cluster_centroid(3) << "\n\n\n\n";
-
-	// //pcl1 test
-	// Eigen::Vector4f cluster_centroid;
-	// sensor_msgs::PointCloud conv_msg;
-	// convertPointCloud2ToPointCloud(msg.clusters[0], conv_msg);
-
- //    Eigen::Vector4f cluster_centroid;
-	// convertPointCloud2ToPointCloud( msg.clusters[0], conv_msg);
- //    pcl::compute3DCentroid( cloud2 , cluster_centroid);
-
-	// while(i < msg.cluster_id.size()){
-	// 	std::cout << "i= " << i << ": " << msg.cluster_id[i] << std::endl << std::endl;
-	// 	i++;
-	// }
-
-	//NEW WAY SEG**************************************
+	double angle_increment = msg.angle_increment;
 
 	cv_bridge::CvImagePtr cv_ptr;
 	cv_ptr = cv_bridge::toCvCopy(latest_frame, "bgr8");
@@ -143,12 +121,7 @@ void pcl_seg_Callback(const pointcloud_msgs::PointCloud2_Segments& msg){
     cv::waitKey(30);
 
 	for (int j=0; j < msg.clusters.size(); j++){		//for every cluster
-
-		//IMAGE 15
-		// std::vector<cv::Mat> img15;
-		// int c15=0;
 		
-
 		int image_counter=0;							//counter used for image_set array
 		double angle_l, angle_r, c_angle_l, c_angle_r;
 		std::pair<double,double> angle_pair(0,0);
@@ -337,27 +310,6 @@ void pcl_seg_Callback(const pointcloud_msgs::PointCloud2_Segments& msg){
 	  		
 	  		out_msg.image_set.push_back(*imgptr);
 
-	  		// IMAGE 15
-	  		// if(c15 < img15.size()){
-	  		// 	img15.push_back(roiout);
-	  		// 	c15++;
-	  		// }
-	  		
-	  		//IMAGE 15
-	  // 		for(int i=0; i<img15.size() && i<15;i++){
-			// 	std::string result= "c"+std::to_string(i);
-			// 	cv::imshow(result,img15.at(i));
-			// 	cv::waitKey(30);
-			// }
-
-	    	//CODE FROM VIDEO CALLBACK
-			//image_segmentation_node::ImageSet set;
-   			//cv::Rect myROI(0, 0, (cv_ptr->image.cols)/3, cv_ptr->image.rows); 
-   			//cv::Mat roi = cv::Mat(cv_ptr->image,myROI);
-   			//sensor_msgs::ImagePtr msg1 = cv_bridge::CvImage(std_msgs::Header(), "bgr8", roi).toImageMsg();
-   			//set.data[0]= *msg1;
-
-			//push back ston image_set
 			image_counter++;
 		}
 	}
@@ -371,7 +323,6 @@ void pcl_seg_Callback(const pointcloud_msgs::PointCloud2_Segments& msg){
 	else{
 		std::cout << "Different size!\n" << std::endl;
 	}
-
 	
 	std::cout << "has_image size: " << out_msg.has_image.size() << std::endl;
 	std::cout << "has_image contents: [";
@@ -379,7 +330,6 @@ void pcl_seg_Callback(const pointcloud_msgs::PointCloud2_Segments& msg){
 		std::cout << "," << out_msg.has_image[c];
 	}
 	std::cout << "]" << std::endl;
-
 
 	out_msg.factor = msg.factor;
 	out_msg.first_stamp = msg.first_stamp;
@@ -606,24 +556,6 @@ int main(int argc, char **argv)
   cv::namedWindow("cluster1");
   //std::cout << "New Window: view5" << std::endl;
 
-  //IMAGE 15
-  // cv::namedWindow("c1");
-  // cv::namedWindow("c2");
-  // cv::namedWindow("c3");
-  // cv::namedWindow("c4");
-  // cv::namedWindow("c5");
-  // cv::namedWindow("c6");
-  // cv::namedWindow("c7");
-  // cv::namedWindow("c8");
-  // cv::namedWindow("c9");
-  // cv::namedWindow("c10");
-  // cv::namedWindow("c11");
-  // cv::namedWindow("c12");
-  // cv::namedWindow("c13");
-  // cv::namedWindow("c14");
-  // cv::namedWindow("c15");
-
-
   image_transport::ImageTransport it(nh);
 
   //advertise to output topic
@@ -653,21 +585,4 @@ int main(int argc, char **argv)
   // cv::destroyWindow("view4");
   //cv::destroyWindow("view5");
   cv::destroyWindow("cluster1");
-
-  //IMAGE 15
-  // cv::destroyWindow("c0");
-  // cv::destroyWindow("c1");
-  // cv::destroyWindow("c2");
-  // cv::destroyWindow("c3");
-  // cv::destroyWindow("c4");
-  // cv::destroyWindow("c5");
-  // cv::destroyWindow("c6");
-  // cv::destroyWindow("c7");
-  // cv::destroyWindow("c8");
-  // cv::destroyWindow("c9");
-  // cv::destroyWindow("c10");
-  // cv::destroyWindow("c11");
-  // cv::destroyWindow("c12");
-  // cv::destroyWindow("c13");
-  // cv::destroyWindow("c14");
 }
