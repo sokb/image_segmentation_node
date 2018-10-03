@@ -1,7 +1,9 @@
 #include <ros/ros.h>
 #include <iostream>
+#include <stdio.h>
 #include <stdlib.h>
-#include <math.h> 
+#include <math.h>
+#include <string>
 //#include "image_segmentation_node/ImageSet.h"
 
 #include <image_transport/image_transport.h>
@@ -21,6 +23,8 @@
 #include <pointcloud_msgs/PointCloud2_Segments.h>
 #include <image_msgs/Image_Segments.h>
 
+#define LOGFILE	"imseg.log"     // all Log(); messages will be appended to this file
+
 ros::Publisher pub;
 image_transport::Publisher tpub;
 
@@ -31,6 +35,35 @@ sensor_msgs::Image latest_frame;
 int got_message = 0;
 int oor=0;
 const double PI = 3.141592653589793;
+       
+bool LogCreated = false;	// keeps track whether the log file is created or not
+ 
+void Log (char *message){	// logs a message to LOGFILE
+	FILE *file;
+ 
+	if (!LogCreated) {
+		file = fopen(LOGFILE, "w");
+		LogCreated = true;
+	}
+	else{		
+		file = fopen(LOGFILE, "a");
+	}
+
+	if (file == NULL) {
+		if (LogCreated){
+			LogCreated = false;
+		}
+		return;
+	}
+	else{
+		fputs(message, file);
+		fclose(file);
+	}
+
+	if (file){
+		fclose(file);
+	}
+}
 
 std::pair<double,double> angle_calculation(double angle_l, double angle_r){
 	//conversion to center-based angles			!A,B,C,D are the quadrants, starting from upper-left quadrant and moving clockwise.
@@ -90,6 +123,14 @@ std::pair<double,double> angle_calculation(double angle_l, double angle_r){
 
 
 void pcl_seg_Callback(const pointcloud_msgs::PointCloud2_Segments& msg){
+
+	// clock_t start;
+	// start = clock();
+	// char buffer[126];
+	// sprintf(buffer,"%d", start);
+	// //char* logstring="Got Message(timestamp) : ";
+	// // strcat(logstring,string(start));
+	// Log(logstring);
 	
 	//pointcloud_msgs::PointCloud2_Segments msg_out;
 
@@ -132,12 +173,24 @@ void pcl_seg_Callback(const pointcloud_msgs::PointCloud2_Segments& msg){
 
     	pcl::PointCloud<pcl::PointXYZ> pc;
     	pcl::fromPCLPointCloud2 ( pc2 , pc );	//from pcl::pointcloud2 to pcl::pointcloud
-    	//pc= clusters[j] in pointcloud format
+    	//pc is clusters[j] in pointcloud format
 
     	pcl::PointXYZ min_point(pc.points[0]);
     	pcl::PointXYZ max_point(pc.points[0]);
 
+
+
     	std::cout << "\n\n\nSTART*****\noriginal min,max y: " << min_point.y << std::endl;
+
+  //   	//MAX Z****************************
+  //   	double max_z;
+  //   	for (int i=1; i < pc.points.size(); i++){		//for every point in the cluster	
+		//  	if(pc.points[i].z > max_z){
+		// 		max_z= pc.points[i].z;
+		// 	}
+		// }
+
+		//**************************************
 
 		for (int i=1; i < pc.points.size(); i++){		//for every point in the cluster	
 			//std::cout << "x= " << pc.points[i].x << std::endl << "y= " << pc.points[i].y << std::endl << "z= " << pc.points[i].z << "\n\n\n";
@@ -308,11 +361,16 @@ void pcl_seg_Callback(const pointcloud_msgs::PointCloud2_Segments& msg){
 	     	cv::Mat roiout = cv::Mat(cv_ptr_in->image,myROIout);
 	  		sensor_msgs::ImagePtr imgptr = cv_bridge::CvImage(std_msgs::Header(), "bgr8", roiout).toImageMsg();
 	  		
-	  		out_msg.image_set.push_back(*imgptr);
+	  		out_msg.image_set.push_back(*imgptr);	//insert images into message for publishing
 
 			image_counter++;
 		}
 	}
+
+	// clock_t end;
+	// logstring= end;
+	// strcat(logstring," : Message ready to publish (timestamp)\n\n********************************\n\n");
+	// Log(logstring);
 
 	std::cout << "\tSize of image set: " << out_msg.image_set.size() << std::endl;
 	std::cout << "No of clusters: " << msg.clusters.size() << std::endl;
