@@ -219,9 +219,9 @@ add_executable(camera src/camera.cpp)
 add_dependencies(camera ${catkin_EXPORTED_TARGETS} ${${PROJECT_NAME}_EXPORTED_TARGETS})
 target_link_libraries(camera ${catkin_LIBRARIES} ${OpenCV_LIBRARIES})
 
-add_executable(subscriber src/subscriber.cpp)
-add_dependencies(subscriber ${catkin_EXPORTED_TARGETS} ${${PROJECT_NAME}_EXPORTED_TARGETS})
-target_link_libraries(subscriber ${catkin_LIBRARIES} ${OpenCV_LIBRARIES} ${PCL_LIBRARIES})
+add_executable(image_segmentation src/image_segmentation.cpp)
+add_dependencies(image_segmentation ${catkin_EXPORTED_TARGETS} ${${PROJECT_NAME}_EXPORTED_TARGETS})
+target_link_libraries(image_segmentation ${catkin_LIBRARIES} ${OpenCV_LIBRARIES} ${PCL_LIBRARIES})
 
 add_executable(seg_listener src/seg_listener.cpp)
 add_dependencies(seg_listener ${catkin_EXPORTED_TARGETS} ${${PROJECT_NAME}_EXPORTED_TARGETS})
