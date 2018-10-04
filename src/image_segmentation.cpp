@@ -5,6 +5,8 @@
 #include <math.h>
 #include <string>
 //#include "image_segmentation_node/ImageSet.h"
+#include <chrono>  // for high_resolution_clock
+#include <fstream> 
 
 #include <image_transport/image_transport.h>
 #include <opencv2/highgui/highgui.hpp>
@@ -28,7 +30,6 @@
 ros::Publisher pub;
 image_transport::Publisher tpub;
 
-
 std::vector<std::pair<double,double>> pair_vector;
 sensor_msgs::Image latest_frame;
 
@@ -36,34 +37,19 @@ int got_message = 0;
 int oor=0;
 const double PI = 3.141592653589793;
        
-bool LogCreated = false;	// keeps track whether the log file is created or not
+static bool LogCreated = false;	// keeps track whether the log file is created or not
  
-void Log (char *message){	// logs a message to LOGFILE
-	FILE *file;
- 
-	if (!LogCreated) {
-		file = fopen(LOGFILE, "w");
-		LogCreated = true;
-	}
-	else{		
-		file = fopen(LOGFILE, "a");
-	}
+// void Log (std::string message, std::chrono::duration duration){	// logs a message to LOGFILE
 
-	if (file == NULL) {
-		if (LogCreated){
-			LogCreated = false;
-		}
-		return;
-	}
-	else{
-		fputs(message, file);
-		fclose(file);
-	}
+// 	std::ofstream ofs;
+// 	ofs.open(LOGFILE, std::ofstream::out | std::ios::app);
+// 	int i=5;
+//   	ofs << "display_time" << std::endl;	//<< display_time
+//   	ofs << i << std::endl;
+//   	ofs << message << std::endl;
+//   	ofs.close();
+// }
 
-	if (file){
-		fclose(file);
-	}
-}
 
 std::pair<double,double> angle_calculation(double angle_l, double angle_r){
 	//conversion to center-based angles			!A,B,C,D are the quadrants, starting from upper-left quadrant and moving clockwise.
@@ -129,7 +115,7 @@ void pcl_seg_Callback(const pointcloud_msgs::PointCloud2_Segments& msg){
 	// char buffer[126];
 	// sprintf(buffer,"%d", start);
 	// //char* logstring="Got Message(timestamp) : ";
-	// // strcat(logstring,string(start));
+	// // strcat(logstring,std::string(start));
 	// Log(logstring);
 	
 	//pointcloud_msgs::PointCloud2_Segments msg_out;
@@ -142,6 +128,10 @@ void pcl_seg_Callback(const pointcloud_msgs::PointCloud2_Segments& msg){
 	if(got_message == 0){
 		return;
 	}
+
+	// Record start time
+	std::chrono::time_point<std::chrono::high_resolution_clock> start = std::chrono::high_resolution_clock::now();
+	//Log("Start time: ",start);
 
 	image_msgs::Image_Segments out_msg;
 
@@ -183,7 +173,7 @@ void pcl_seg_Callback(const pointcloud_msgs::PointCloud2_Segments& msg){
     	std::cout << "\n\n\nSTART*****\noriginal min,max y: " << min_point.y << std::endl;
 
   //   	//MAX Z****************************
-  //   	double max_z;
+  //   	double max_z=pc.points[0].z;
   //   	for (int i=1; i < pc.points.size(); i++){		//for every point in the cluster	
 		//  	if(pc.points[i].z > max_z){
 		// 		max_z= pc.points[i].z;
@@ -366,6 +356,13 @@ void pcl_seg_Callback(const pointcloud_msgs::PointCloud2_Segments& msg){
 			image_counter++;
 		}
 	}
+
+	//Record end time
+
+	std::chrono::time_point<std::chrono::high_resolution_clock> finish = std::chrono::high_resolution_clock::now();
+	// auto duration = (finish - start).count();
+	// //auto duration = std::chrono::duration_cast<std::chrono::microseconds>(finish - start).count();
+	// Log("End time: ",duration);
 
 	// clock_t end;
 	// logstring= end;
