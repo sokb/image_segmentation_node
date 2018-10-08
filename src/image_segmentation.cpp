@@ -34,12 +34,17 @@ std::vector<std::pair<double,double>> pair_vector;
 sensor_msgs::Image latest_frame;
 
 int got_message = 0;
-int oor=0;
+
+int new_pcl= 0;
+int updated_frame= 0;
+int first_frame= 0;
+
+int oor= 0;
 const double PI = 3.141592653589793;
        
-static bool LogCreated = false;	// keeps track whether the log file is created or not
+//static bool LogCreated = false;	// keeps track whether the log file is created or not
  
-// void Log (std::string message, std::chrono::duration duration){	// logs a message to LOGFILE
+// void Log (std::string message, std::chrono::milliseconds duration){	// logs a message to LOGFILE
 
 // 	std::ofstream ofs;
 // 	ofs.open(LOGFILE, std::ofstream::out | std::ios::app);
@@ -48,7 +53,7 @@ static bool LogCreated = false;	// keeps track whether the log file is created o
 //   	ofs << i << std::endl;
 //   	ofs << message << std::endl;
 //   	ofs.close();
-// }
+//}
 
 
 std::pair<double,double> angle_calculation(double angle_l, double angle_r){
@@ -110,6 +115,12 @@ std::pair<double,double> angle_calculation(double angle_l, double angle_r){
 
 void pcl_seg_Callback(const pointcloud_msgs::PointCloud2_Segments& msg){
 
+	if(first_frame == 0){	//enallaktika while
+		return;
+	}
+
+	new_pcl=1;
+
 	// clock_t start;
 	// start = clock();
 	// char buffer[126];
@@ -120,14 +131,9 @@ void pcl_seg_Callback(const pointcloud_msgs::PointCloud2_Segments& msg){
 	
 	//pointcloud_msgs::PointCloud2_Segments msg_out;
 
-	// while(got_message == 1){
-	// 	1;
-	// 	std::cout << "In seg loop..." << std::endl;
+	// if(got_message == 0){
+	// 	return;
 	// }
-
-	if(got_message == 0){
-		return;
-	}
 
 	// Record start time
 	std::chrono::time_point<std::chrono::high_resolution_clock> start = std::chrono::high_resolution_clock::now();
@@ -143,16 +149,25 @@ void pcl_seg_Callback(const pointcloud_msgs::PointCloud2_Segments& msg){
 	double angle_max = msg.angle_max;
 	double angle_increment = msg.angle_increment;
 
+	// cv_bridge::CvImagePtr cv_ptr;
+	// cv_ptr = cv_bridge::toCvCopy(latest_frame, "bgr8");
+	//got_message=0;
+
 	cv_bridge::CvImagePtr cv_ptr;
 	cv_ptr = cv_bridge::toCvCopy(latest_frame, "bgr8");
-
-	got_message=0;
+	new_pcl=0;
 
 	cv::imshow("view",cv_ptr->image);
     cv::waitKey(30);
 
+    pcl::PointCloud<pcl::PointXYZ> pcz; 			//pcz contains all points with max z
+
+    std::cout << "\n________NEW MESSAGE________\n" << std::endl;
+
 	for (int j=0; j < msg.clusters.size(); j++){		//for every cluster
-		
+
+		pcz.clear();
+
 		int image_counter=0;							//counter used for image_set array
 		double angle_l, angle_r, c_angle_l, c_angle_r;
 		std::pair<double,double> angle_pair(0,0);
@@ -162,41 +177,75 @@ void pcl_seg_Callback(const pointcloud_msgs::PointCloud2_Segments& msg){
     	pcl_conversions::toPCL ( msg.clusters[j] , pc2 );	//from sensor_msgs::pointcloud2 to pcl::pointcloud2
 
     	pcl::PointCloud<pcl::PointXYZ> pc;
-    	pcl::fromPCLPointCloud2 ( pc2 , pc );	//from pcl::pointcloud2 to pcl::pointcloud
+    	pcl::fromPCLPointCloud2 ( pc2 , pc );				//from pcl::pointcloud2 to pcl::pointcloud
     	//pc is clusters[j] in pointcloud format
 
-    	pcl::PointXYZ min_point(pc.points[0]);
-    	pcl::PointXYZ max_point(pc.points[0]);
-
-
-
-    	std::cout << "\n\n\nSTART*****\noriginal min,max y: " << min_point.y << std::endl;
-
-  //   	//MAX Z****************************
-  //   	double max_z=pc.points[0].z;
-  //   	for (int i=1; i < pc.points.size(); i++){		//for every point in the cluster	
-		//  	if(pc.points[i].z > max_z){
-		// 		max_z= pc.points[i].z;
-		// 	}
-		// }
-
-		//**************************************
-
-		for (int i=1; i < pc.points.size(); i++){		//for every point in the cluster	
-			//std::cout << "x= " << pc.points[i].x << std::endl << "y= " << pc.points[i].y << std::endl << "z= " << pc.points[i].z << "\n\n\n";
-			if(pc.points[i].y < min_point.y){
-				min_point.x= pc.points[i].x;
-				min_point.y= pc.points[i].y;
-				min_point.z= pc.points[i].z;
-			}
-		 	if(pc.points[i].y > max_point.y){
-				max_point.x= pc.points[i].x;
-				max_point.y= pc.points[i].y;
-				max_point.z= pc.points[i].z;
+   	//MAX Z******************************************************************************************************
+    
+    	double max_z=pc.points[0].z;
+    	for (int i=1; i < pc.points.size(); i++){		//find max z of cluster	
+		 	if(pc.points[i].z > max_z){
+				max_z= pc.points[i].z;
 			}
 		}
-		// std::cout << "MAX y= " << max_point.y << std::endl << "x= " << max_point.x << std::endl << "z= " << max_point.z << std::endl << std::endl;
-		// std::cout << "MIN y= " << min_point.y << std::endl << "x= " << min_point.x << std::endl << "z= " << min_point.z << std::endl << std::endl;
+		std::cout << "Max z = " << max_z << std::endl;
+		int counter=0;
+		for(int i=0; i < pc.points.size(); i++){		//add points with max z to a new pointcloud
+			if(pc.points[i].z == max_z){
+				counter++;
+				pcz.push_back(pc.points[i]);
+			}
+		}
+		if(counter == pcz.size() && pcz.size() == pcz.points.size() ){
+			std::cout << "pcz size same as counter (" << counter << " / " << pc.points.size() << ") ! All is fine" << std::endl;
+		}
+		else{
+			std::cout << "something's wrong" << std::endl;
+		}
+
+		pcl::PointXYZ min_point(pcz.points[0]);
+    	pcl::PointXYZ max_point(pcz.points[0]);
+		std::cout << "\n\n\nSTART*****\noriginal min,max y: " << min_point.y << std::endl;
+
+		for (int i=1; i < pcz.points.size(); i++){		//for every point in the cluster, find min y and max y	
+			//std::cout << "x= " << pcz.points[i].x << std::endl << "y= " << pcz.points[i].y << std::endl << "z= " << pcz.points[i].z << "\n\n\n";
+			if(pcz.points[i].y < min_point.y){
+				min_point.x= pcz.points[i].x;
+				min_point.y= pcz.points[i].y;
+				min_point.z= pcz.points[i].z;
+			}
+		 	if(pcz.points[i].y > max_point.y){
+				max_point.x= pcz.points[i].x;
+				max_point.y= pcz.points[i].y;
+				max_point.z= pcz.points[i].z;
+			}
+		}
+
+	//**********************************************************************************************************
+
+	// //___OLD__________________________________________________________________________________________________________
+
+	// 	pcl::PointXYZ min_point(pc.points[0]);
+ //    	pcl::PointXYZ max_point(pc.points[0]);
+	// 	std::cout << "\n\n\nSTART*****\noriginal min,max y: " << min_point.y << std::endl;
+
+	// 	for (int i=1; i < pc.points.size(); i++){		//for every point in the cluster, find min y and max y	
+	// 		//std::cout << "x= " << pc.points[i].x << std::endl << "y= " << pc.points[i].y << std::endl << "z= " << pc.points[i].z << "\n\n\n";
+	// 		if(pc.points[i].y < min_point.y){
+	// 			min_point.x= pc.points[i].x;
+	// 			min_point.y= pc.points[i].y;
+	// 			min_point.z= pc.points[i].z;
+	// 		}
+	// 	 	if(pc.points[i].y > max_point.y){
+	// 			max_point.x= pc.points[i].x;
+	// 			max_point.y= pc.points[i].y;
+	// 			max_point.z= pc.points[i].z;
+	// 		}
+	// 	}
+	// 	// std::cout << "MAX y= " << max_point.y << std::endl << "x= " << max_point.x << std::endl << "z= " << max_point.z << std::endl << std::endl;
+	// 	// std::cout << "MIN y= " << min_point.y << std::endl << "x= " << min_point.x << std::endl << "z= " << min_point.z << std::endl << std::endl;
+
+	// //________________________________________________________________________________________________________________
 
 		std::cout << "Min y is: " << min_point.y << "\nMax y is: " << max_point.y << std::endl;
 		std::cout << "Min x is: " << min_point.x << "\nMax x is: " << max_point.x << std::endl;
@@ -247,7 +296,7 @@ void pcl_seg_Callback(const pointcloud_msgs::PointCloud2_Segments& msg){
 				pixel_vector.push_back( pixel_pair );
 				//continue;
 			}
-			else if( a_l < cam_min && a_r > cam_max ){	//bigger than image size
+			else if( a_l < cam_min && a_r > cam_max ){				//bigger than image size
 				std::cout << "bigger than image size!" << std::endl;
 				x_l= -center;
 				x_r= center;
@@ -259,7 +308,7 @@ void pcl_seg_Callback(const pointcloud_msgs::PointCloud2_Segments& msg){
 			else if( a_l < cam_min && a_r > cam_min && a_r < cam_max ){	//left side out of range
 				std::cout << "left side out of range!" << std::endl;
 				x_l= -center;
-				x_r= a_r*ratio;	//x_r, x_l: pixel distance from center of image (can be either positive or negative)
+				x_r= a_r*ratio;		//x_r, x_l: pixel distance from center of image (can be either positive or negative)
 
 				pixel_pair.first= x_l;
 				pixel_pair.second= x_r;
@@ -356,7 +405,7 @@ void pcl_seg_Callback(const pointcloud_msgs::PointCloud2_Segments& msg){
 			image_counter++;
 		}
 	}
-
+	
 	//Record end time
 
 	std::chrono::time_point<std::chrono::high_resolution_clock> finish = std::chrono::high_resolution_clock::now();
@@ -479,17 +528,32 @@ void pcl_seg_Callback(const pointcloud_msgs::PointCloud2_Segments& msg){
 
 
 void videoCallback(const sensor_msgs::ImageConstPtr& msg){
-	// while( got_message == 0 ){
-	// 	1;
-	// 	//std::cout << "In video loop..." << std::endl;
-	// }
-	std_msgs::Header h = msg->header;
-	sensor_msgs::Image new_msg;
+
+	// std_msgs::Header h = msg->header;
+	// sensor_msgs::Image new_msg;
+	// latest_frame= *msg;
+	// got_message=1;	
+
+	if(first_frame == 0){
+		std_msgs::Header h = msg->header;
+		sensor_msgs::Image new_msg;
+		latest_frame= *msg;
+		first_frame= 1;
+		return;
+	}
+
+	if(new_pcl == 1){
+		std_msgs::Header h = msg->header;
+		sensor_msgs::Image new_msg;
+		latest_frame= *msg;
+		first_frame= 1;
+		//updated_frame= 1;
+	}
+	else{
+		return;
+	}
 
 
-	//new way...
-	latest_frame= *msg;
-	got_message=1;
 
 
   try
