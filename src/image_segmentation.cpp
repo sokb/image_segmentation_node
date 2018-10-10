@@ -41,19 +41,14 @@ int first_frame= 0;
 
 int oor= 0;
 const double PI = 3.141592653589793;
-       
-//static bool LogCreated = false;	// keeps track whether the log file is created or not
- 
-// void Log (std::string message, std::chrono::milliseconds duration){	// logs a message to LOGFILE
 
-// 	std::ofstream ofs;
-// 	ofs.open(LOGFILE, std::ofstream::out | std::ios::app);
-// 	int i=5;
-//   	ofs << "display_time" << std::endl;	//<< display_time
-//   	ofs << i << std::endl;
-//   	ofs << message << std::endl;
-//   	ofs.close();
-//}
+void Log (double duration_secs, std::string message){	// logs a message to LOGFILE
+
+	std::ofstream ofs;
+	ofs.open(LOGFILE, std::ofstream::out | std::ios::app);
+  	ofs << duration_secs << "secs : " << message << std::endl;
+  	ofs.close();
+}
 
 
 std::pair<double,double> angle_calculation(double angle_l, double angle_r){
@@ -120,24 +115,12 @@ void pcl_seg_Callback(const pointcloud_msgs::PointCloud2_Segments& msg){
 	}
 
 	new_pcl=1;
-
-	// clock_t start;
-	// start = clock();
-	// char buffer[126];
-	// sprintf(buffer,"%d", start);
-	// //char* logstring="Got Message(timestamp) : ";
-	// // strcat(logstring,std::string(start));
-	// Log(logstring);
 	
 	//pointcloud_msgs::PointCloud2_Segments msg_out;
 
 	// if(got_message == 0){
 	// 	return;
 	// }
-
-	// Record start time
-	std::chrono::time_point<std::chrono::high_resolution_clock> start = std::chrono::high_resolution_clock::now();
-	//Log("Start time: ",start);
 
 	image_msgs::Image_Segments out_msg;
 
@@ -156,6 +139,11 @@ void pcl_seg_Callback(const pointcloud_msgs::PointCloud2_Segments& msg){
 	cv_bridge::CvImagePtr cv_ptr;
 	cv_ptr = cv_bridge::toCvCopy(latest_frame, "bgr8");
 	new_pcl=0;
+
+	// Timestamp: "Start" (Just got the pcl_segments message)
+	ros::Duration dur;
+	double secs;
+	ros::Time start = ros::Time::now();
 
 	cv::imshow("view",cv_ptr->image);
     cv::waitKey(30);
@@ -182,6 +170,9 @@ void pcl_seg_Callback(const pointcloud_msgs::PointCloud2_Segments& msg){
 
    	//MAX Z******************************************************************************************************
     
+    	// Timestamp: "z_start_time" (Start of maximum z pointcloud extraction process)
+		ros::Time z_start_time = ros::Time::now();
+
     	double max_z=pc.points[0].z;
     	for (int i=1; i < pc.points.size(); i++){		//find max z of cluster	
 		 	if(pc.points[i].z > max_z){
@@ -196,6 +187,13 @@ void pcl_seg_Callback(const pointcloud_msgs::PointCloud2_Segments& msg){
 				pcz.push_back(pc.points[i]);
 			}
 		}
+
+		// Timestamp: "z_stop_time" (End of maximum z pointcloud extraction process)
+		ros::Time z_stop_time = ros::Time::now();
+		dur = z_stop_time - z_start_time;
+		secs =dur.toSec();
+		Log(secs,"Duration of Slice Extraction Process");
+
 		if(counter == pcz.size() && pcz.size() == pcz.points.size() ){
 			std::cout << "pcz size same as counter (" << counter << " / " << pc.points.size() << ") ! All is fine" << std::endl;
 		}
@@ -405,18 +403,6 @@ void pcl_seg_Callback(const pointcloud_msgs::PointCloud2_Segments& msg){
 			image_counter++;
 		}
 	}
-	
-	//Record end time
-
-	std::chrono::time_point<std::chrono::high_resolution_clock> finish = std::chrono::high_resolution_clock::now();
-	// auto duration = (finish - start).count();
-	// //auto duration = std::chrono::duration_cast<std::chrono::microseconds>(finish - start).count();
-	// Log("End time: ",duration);
-
-	// clock_t end;
-	// logstring= end;
-	// strcat(logstring," : Message ready to publish (timestamp)\n\n********************************\n\n");
-	// Log(logstring);
 
 	std::cout << "\tSize of image set: " << out_msg.image_set.size() << std::endl;
 	std::cout << "No of clusters: " << msg.clusters.size() << std::endl;
@@ -479,7 +465,11 @@ void pcl_seg_Callback(const pointcloud_msgs::PointCloud2_Segments& msg){
   float32 scan_time
 	*/
 
-
+	// Timestamp: "End" (Just before publishing the message)
+	ros::Time end = ros::Time::now();
+	dur = end - start;
+	secs =dur.toSec();
+	Log(secs,"Total Duration (from getting the message to just before publishing the new message)");
 
 	pub.publish(out_msg);
 	// std::cout << "HEADER INFO BELOW:\n\n" << msg.header<< std::endl;
