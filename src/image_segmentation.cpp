@@ -4,8 +4,6 @@
 #include <stdlib.h>
 #include <math.h>
 #include <string>
-//#include "image_segmentation_node/ImageSet.h"
-#include <chrono>  // for high_resolution_clock
 #include <fstream> 
 
 #include <image_transport/image_transport.h>
@@ -36,17 +34,16 @@ sensor_msgs::Image latest_frame;
 int got_message = 0;
 
 int new_pcl= 0;
-int updated_frame= 0;
 int first_frame= 0;
 
 int oor= 0;
 const double PI = 3.141592653589793;
 
-void Log (double duration_secs, std::string message){	// logs a message to LOGFILE
+void Log (int64 duration_secs, std::string message){	// logs a message to LOGFILE
 
 	std::ofstream ofs;
 	ofs.open(LOGFILE, std::ofstream::out | std::ios::app);
-  	ofs << duration_secs << "secs : " << message << std::endl;
+  	ofs << duration_secs << " nsecs : " << message << std::endl;
   	ofs.close();
 }
 
@@ -110,17 +107,11 @@ std::pair<double,double> angle_calculation(double angle_l, double angle_r){
 
 void pcl_seg_Callback(const pointcloud_msgs::PointCloud2_Segments& msg){
 
-	if(first_frame == 0){	//enallaktika while
+	if(first_frame == 0){
 		return;
 	}
-
-	new_pcl=1;
 	
 	//pointcloud_msgs::PointCloud2_Segments msg_out;
-
-	// if(got_message == 0){
-	// 	return;
-	// }
 
 	image_msgs::Image_Segments out_msg;
 
@@ -138,11 +129,13 @@ void pcl_seg_Callback(const pointcloud_msgs::PointCloud2_Segments& msg){
 
 	cv_bridge::CvImagePtr cv_ptr;
 	cv_ptr = cv_bridge::toCvCopy(latest_frame, "bgr8");
-	new_pcl=0;
+	//new_pcl=0;
 
-	// Timestamp: "Start" (Just got the pcl_segments message)
+	//Timestamp: "Start" (Just got the pcl_segments message)
 	ros::Duration dur;
-	double secs;
+	ros::Duration z_dur;
+	int64 secs=0;
+	int64 z_secs=0;
 	ros::Time start = ros::Time::now();
 
 	cv::imshow("view",cv_ptr->image);
@@ -190,9 +183,8 @@ void pcl_seg_Callback(const pointcloud_msgs::PointCloud2_Segments& msg){
 
 		// Timestamp: "z_stop_time" (End of maximum z pointcloud extraction process)
 		ros::Time z_stop_time = ros::Time::now();
-		dur = z_stop_time - z_start_time;
-		secs =dur.toSec();
-		Log(secs,"Duration of Slice Extraction Process");
+		z_dur = z_dur + (z_stop_time - z_start_time);
+		z_secs =z_secs + z_dur.toNSec();
 
 		if(counter == pcz.size() && pcz.size() == pcz.points.size() ){
 			std::cout << "pcz size same as counter (" << counter << " / " << pc.points.size() << ") ! All is fine" << std::endl;
@@ -404,6 +396,8 @@ void pcl_seg_Callback(const pointcloud_msgs::PointCloud2_Segments& msg){
 		}
 	}
 
+	Log(z_secs,"Duration of Slice Extraction Process (all clusters)");
+
 	std::cout << "\tSize of image set: " << out_msg.image_set.size() << std::endl;
 	std::cout << "No of clusters: " << msg.clusters.size() << std::endl;
 	std::cout << "pair_vector size: " << pair_vector.size() << "\npixel_vector size: " << pixel_vector.size() << std::endl;
@@ -468,10 +462,11 @@ void pcl_seg_Callback(const pointcloud_msgs::PointCloud2_Segments& msg){
 	// Timestamp: "End" (Just before publishing the message)
 	ros::Time end = ros::Time::now();
 	dur = end - start;
-	secs =dur.toSec();
-	Log(secs,"Total Duration (from getting the message to just before publishing the new message)");
+	secs =dur.toNSec();
+	Log(secs,"Total Duration (from getting the message to just before publishing the new message)\n");
 
 	pub.publish(out_msg);
+
 	// std::cout << "HEADER INFO BELOW:\n\n" << msg.header<< std::endl;
 	// std::cout << "FIRST STAMP:\n\n" << msg.first_stamp << std::endl;
 
@@ -521,31 +516,12 @@ void videoCallback(const sensor_msgs::ImageConstPtr& msg){
 
 	// std_msgs::Header h = msg->header;
 	// sensor_msgs::Image new_msg;
-	// latest_frame= *msg;
-	// got_message=1;	
-
-	if(first_frame == 0){
-		std_msgs::Header h = msg->header;
-		sensor_msgs::Image new_msg;
-		latest_frame= *msg;
-		first_frame= 1;
-		return;
-	}
-
-	if(new_pcl == 1){
-		std_msgs::Header h = msg->header;
-		sensor_msgs::Image new_msg;
-		latest_frame= *msg;
-		first_frame= 1;
-		//updated_frame= 1;
-	}
-	else{
-		return;
-	}
-
-
-
-
+	// latest_frame= *msg;	
+	std_msgs::Header h = msg->header;
+	sensor_msgs::Image new_msg;
+	latest_frame= *msg;
+	first_frame= 1;
+  
   try
   {
     //cv::imshow("view", cv_bridge::toCvShare(msg, "bgr8")->image);
