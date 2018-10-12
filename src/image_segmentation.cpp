@@ -31,9 +31,6 @@ image_transport::Publisher tpub;
 std::vector<std::pair<double,double>> pair_vector;
 sensor_msgs::Image latest_frame;
 
-int got_message = 0;
-
-int new_pcl= 0;
 int first_frame= 0;
 
 int oor= 0;
@@ -123,13 +120,8 @@ void pcl_seg_Callback(const pointcloud_msgs::PointCloud2_Segments& msg){
 	double angle_max = msg.angle_max;
 	double angle_increment = msg.angle_increment;
 
-	// cv_bridge::CvImagePtr cv_ptr;
-	// cv_ptr = cv_bridge::toCvCopy(latest_frame, "bgr8");
-	//got_message=0;
-
 	cv_bridge::CvImagePtr cv_ptr;
 	cv_ptr = cv_bridge::toCvCopy(latest_frame, "bgr8");
-	//new_pcl=0;
 
 	//Timestamp: "Start" (Just got the pcl_segments message)
 	ros::Duration dur;
@@ -277,8 +269,17 @@ void pcl_seg_Callback(const pointcloud_msgs::PointCloud2_Segments& msg){
 
 		// a_r not necessarily greater than a_l (a_l, a_r are the centered angles)
 		if( a_l < a_r ){
-			if( (a_l < cam_min && a_r < cam_min) || (a_l > cam_max && a_r > cam_max) ){	//out of range
-				std::cout << "out of range!" << std::endl;
+			if( a_l < cam_min && a_r < cam_min ){	//out of range (left)
+				std::cout << "Case: out of range! (left)" << std::endl;
+				oor=1;
+
+				pixel_pair.first= NAN;
+				pixel_pair.second= NAN;
+				pixel_vector.push_back( pixel_pair );
+				//continue;
+			}
+			else if( a_l > cam_max && a_r > cam_max ){	//out of range (right)
+				std::cout << "Case: out of range! (right)" << std::endl;
 				oor=1;
 
 				pixel_pair.first= NAN;
@@ -287,7 +288,7 @@ void pcl_seg_Callback(const pointcloud_msgs::PointCloud2_Segments& msg){
 				//continue;
 			}
 			else if( a_l < cam_min && a_r > cam_max ){				//bigger than image size
-				std::cout << "bigger than image size!" << std::endl;
+				std::cout << "Case: bigger than image size!" << std::endl;
 				x_l= -center;
 				x_r= center;
 
@@ -296,7 +297,7 @@ void pcl_seg_Callback(const pointcloud_msgs::PointCloud2_Segments& msg){
 				pixel_vector.push_back( pixel_pair );
 			}
 			else if( a_l < cam_min && a_r > cam_min && a_r < cam_max ){	//left side out of range
-				std::cout << "left side out of range!" << std::endl;
+				std::cout << "Case: left side out of range!" << std::endl;
 				x_l= -center;
 				x_r= a_r*ratio;		//x_r, x_l: pixel distance from center of image (can be either positive or negative)
 
@@ -305,7 +306,7 @@ void pcl_seg_Callback(const pointcloud_msgs::PointCloud2_Segments& msg){
 				pixel_vector.push_back( pixel_pair );
 			}
 			else if( a_r > cam_max && a_l > cam_min && a_l < cam_max ){	//right side out of range
-				std::cout << "right side out of range!" << std::endl;
+				std::cout << "Case: right side out of range!" << std::endl;
 				x_r= center;
 				x_l= a_l*ratio;
 
@@ -314,7 +315,7 @@ void pcl_seg_Callback(const pointcloud_msgs::PointCloud2_Segments& msg){
 				pixel_vector.push_back( pixel_pair );
 			}
 			else if( a_l > cam_min && a_l < cam_max && a_r > cam_min && a_r < cam_max ){	//in range
-				std::cout << "in range!" << std::endl;
+				std::cout << "Case: in range!" << std::endl;
 				x_l= a_l*ratio;
 				x_r= a_r*ratio;
 
@@ -323,7 +324,7 @@ void pcl_seg_Callback(const pointcloud_msgs::PointCloud2_Segments& msg){
 				pixel_vector.push_back( pixel_pair );
 			}
 			else{
-				std::cout << "??????" << std::endl;
+				std::cout << "Case: ??????" << std::endl;
 				oor=1;
 
 				pixel_pair.first= NAN;
@@ -653,7 +654,8 @@ int main(int argc, char **argv)
 
   std::cout << "reached subscribers point" << std::endl;
   ros::Subscriber pcl_seg_sub = nh.subscribe<const pointcloud_msgs::PointCloud2_Segments&>("pointcloud2_cluster_tracking/clusters", 1, pcl_seg_Callback);
-  image_transport::Subscriber video_sub = it.subscribe("camera/rgb/image_raw", 50, videoCallback);		//  usb_cam/image_raw gia to rosbag me to video mono.
+  image_transport::Subscriber video_sub = it.subscribe("rear_cam/image_raw", 50, videoCallback);		//  camera/rgb/image_raw gia to rosbag me tous 3, usb_cam/image_raw gia to rosbag me to video mono, rear_cam/image_raw gia to rosbag me emena
+
   ros::Subscriber laser_sub = nh.subscribe("scan",50, laserCallback);
 
   ros::Rate loop_rate(0.5);
