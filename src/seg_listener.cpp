@@ -9,13 +9,14 @@
 #include <string>
 
 using namespace std;
+int message_count = 0; 
 
 void segCallback(const image_msgs::Image_Segments set){
 
   string window_name;
 
 	
-
+  int image_count = 0; 
   for( int i=0; i<set.image_set.size(); i++ ){
 
     if(i>0){
@@ -31,14 +32,16 @@ void segCallback(const image_msgs::Image_Segments set){
     cv::imshow(window_name, cv_ptr->image);
     cv::waitKey(30);
 
-    static int image_count = 0;                            
+                               
     std::stringstream sstream;                               
-    sstream << "my_image" << image_count << ".png" ;                 
+    sstream << "my_image_" << message_count << "_" << image_count << ".png" ;                 
     ROS_ASSERT( cv::imwrite( sstream.str(),  cv_ptr->image ) );      
     image_count++;                                      
   }
   window_name="view"+set.image_set.size();
   cv::destroyWindow(window_name);
+
+  message_count++;
 
   // sensor_msgs::Image msg1 =set.image_set[0];
   // sensor_msgs::Image msg2 =set.image_set[1];

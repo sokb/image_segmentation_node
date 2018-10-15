@@ -36,7 +36,7 @@ int first_frame= 0;
 int oor= 0;
 const double PI = 3.141592653589793;
 
-void Log (int64 duration_secs, std::string message){	// logs a message to LOGFILE
+void Log (uint64_t duration_secs, std::string message){	// logs a message to LOGFILE
 
 	std::ofstream ofs;
 	ofs.open(LOGFILE, std::ofstream::out | std::ios::app);
@@ -126,8 +126,8 @@ void pcl_seg_Callback(const pointcloud_msgs::PointCloud2_Segments& msg){
 	//Timestamp: "Start" (Just got the pcl_segments message)
 	ros::Duration dur;
 	ros::Duration z_dur;
-	int64 secs=0;
-	int64 z_secs=0;
+	uint64_t secs=0;
+	uint64_t z_secs=0;
 	ros::Time start = ros::Time::now();
 
 	cv::imshow("view",cv_ptr->image);
@@ -176,7 +176,7 @@ void pcl_seg_Callback(const pointcloud_msgs::PointCloud2_Segments& msg){
 		// Timestamp: "z_stop_time" (End of maximum z pointcloud extraction process)
 		ros::Time z_stop_time = ros::Time::now();
 		z_dur = z_dur + (z_stop_time - z_start_time);
-		z_secs =z_secs + z_dur.toNSec();
+		z_secs =z_secs + z_dur.toNSec();	// toNSec() returns uint64_t
 
 		if(counter == pcz.size() && pcz.size() == pcz.points.size() ){
 			std::cout << "pcz size same as counter (" << counter << " / " << pc.points.size() << ") ! All is fine" << std::endl;
@@ -230,7 +230,7 @@ void pcl_seg_Callback(const pointcloud_msgs::PointCloud2_Segments& msg){
 	// //________________________________________________________________________________________________________________
 
 		std::cout << "Min y is: " << min_point.y << "\nMax y is: " << max_point.y << std::endl;
-		std::cout << "Min x is: " << min_point.x << "\nMax x is: " << max_point.x << std::endl;
+		std::cout << "Min x is: " << min_point.x << "\nMax x is: " << max_point.x << std::endl;	//min_x is the x of point with min y (not actual min_x of cluster)
 
 		//angle calculation in rads [0,2pi] starting from upper-left quadrant. 		! x,y are reversed because of laserscan's reversed x,y axes
 		angle_l= atan2(min_point.x, min_point.y);
@@ -261,7 +261,7 @@ void pcl_seg_Callback(const pointcloud_msgs::PointCloud2_Segments& msg){
 		std::cout << "ANGLES:\nLEFT: " << a_l << "\nRIGHT: " << a_r << std::endl;
 
 		double cam_min= -PI/6, cam_max= PI/6;	// Orbbec Astra Pro wideness: PI/3 (60 degrees) total
-		std::cout << "Image.cols (width)= " << cv_ptr->image.cols << "\nabs(cam_min)= " << abs(cam_min) << "\nabs(cam_max)= " << abs(cam_max) << std::endl;
+		std::cout << "Image.cols (width)= " << cv_ptr->image.cols << "\nImage.rows (height)= " << cv_ptr->image.rows << "\nabs(cam_min)= " << abs(cam_min) << "\nabs(cam_max)= " << abs(cam_max) << std::endl;
 		int ratio= (cv_ptr->image.cols) / (abs(cam_min)+abs(cam_max)) ;	//	(width pixels) / (wideness)
 		std::cout << "Ratio:\t" << ratio << std::endl;
 		int center = (cv_ptr->image.cols)/2;
