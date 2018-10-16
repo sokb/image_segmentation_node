@@ -187,7 +187,8 @@ void pcl_seg_Callback(const pointcloud_msgs::PointCloud2_Segments& msg){
 
 		pcl::PointXYZ min_point(pcz.points[0]);
     	pcl::PointXYZ max_point(pcz.points[0]);
-		std::cout << "\n\n\nSTART*****\noriginal min,max y: " << min_point.y << std::endl;
+		std::cout << "\n\n\nSTART*****\n" << std::endl;
+		//std::cout << "original min,max y: " << min_point.y << std::endl;
 
 		for (int i=1; i < pcz.points.size(); i++){		//for every point in the cluster, find min y and max y	
 			//std::cout << "x= " << pcz.points[i].x << std::endl << "y= " << pcz.points[i].y << std::endl << "z= " << pcz.points[i].z << "\n\n\n";
@@ -232,7 +233,8 @@ void pcl_seg_Callback(const pointcloud_msgs::PointCloud2_Segments& msg){
 		std::cout << "Min y is: " << min_point.y << "\nMax y is: " << max_point.y << std::endl;
 		std::cout << "Min x is: " << min_point.x << "\nMax x is: " << max_point.x << std::endl;	//min_x is the x of point with min y (not actual min_x of cluster)
 
-		//angle calculation in rads [0,2pi] starting from upper-left quadrant. 		! x,y are reversed because of laserscan's reversed x,y axes
+		// angle calculation in rads [0,2pi].				! x,y are reversed because of laserscan's reversed x,y axes
+		// returned angle is in [0, pi] when y >= 0, and in (-pi, 0) when y < 0. 	
 		angle_l= atan2(min_point.x, min_point.y);
 		angle_r= atan2(max_point.x, max_point.y);
 
@@ -258,7 +260,7 @@ void pcl_seg_Callback(const pointcloud_msgs::PointCloud2_Segments& msg){
 		}
 		double a_l= pair_vector.at(j).first;	//first: center-based left angle, second: center_based right angle
 		double a_r= pair_vector.at(j).second;
-		std::cout << "ANGLES:\nLEFT: " << a_l << "\nRIGHT: " << a_r << std::endl;
+		//std::cout << "ANGLES:\nLEFT: " << a_l << "\nRIGHT: " << a_r << std::endl;
 
 		double cam_min= -PI/6, cam_max= PI/6;	// Orbbec Astra Pro wideness: PI/3 (60 degrees) total
 		std::cout << "Image.cols (width)= " << cv_ptr->image.cols << "\nImage.rows (height)= " << cv_ptr->image.rows << "\nabs(cam_min)= " << abs(cam_min) << "\nabs(cam_max)= " << abs(cam_max) << std::endl;
@@ -266,6 +268,8 @@ void pcl_seg_Callback(const pointcloud_msgs::PointCloud2_Segments& msg){
 		std::cout << "Ratio:\t" << ratio << std::endl;
 		int center = (cv_ptr->image.cols)/2;
 		int x_l, x_r;
+
+		//Pixel Conversion:
 
 		// a_r not necessarily greater than a_l (a_l, a_r are the centered angles)
 		if( a_l < a_r ){
