@@ -361,6 +361,9 @@ void pcl_seg_Callback(const pointcloud_msgs::PointCloud2_Segments& msg){
 		//can include the following in later 'else'
 		if( isnan(pixel_pair.first)==0 && isnan(pixel_pair.second)==0 ){
 			width_pixels= x_r - x_l;
+			if(width_pixels < 0){
+				std::cout << "width_pixels is negative for some reason..." << std::endl;
+			}
 			offset= center + x_l;
 			std::cout << "\n\nx_l= " << x_l << "\nx_r= " << x_r << "\nwidth_pixels= " << width_pixels << "\noffset= " << offset << "\n\n\n\n";
 			cv::Rect myROIseg(offset, 0, width_pixels, cv_ptr->image.rows); 
@@ -658,7 +661,7 @@ int main(int argc, char **argv)
 
   std::cout << "reached subscribers point" << std::endl;
   ros::Subscriber pcl_seg_sub = nh.subscribe<const pointcloud_msgs::PointCloud2_Segments&>("pointcloud2_cluster_tracking/clusters", 1, pcl_seg_Callback);
-  image_transport::Subscriber video_sub = it.subscribe("rear_cam/image_raw", 50, videoCallback);		//  camera/rgb/image_raw gia to rosbag me tous 3, usb_cam/image_raw gia to rosbag me to video mono, rear_cam/image_raw gia to rosbag me emena
+  image_transport::Subscriber video_sub = it.subscribe("camera/rgb/image_raw", 50, videoCallback);		//  camera/rgb/image_raw gia to rosbag me tous 3, usb_cam/image_raw gia to rosbag me to video mono, rear_cam/image_raw gia to rosbag me emena
 
   ros::Subscriber laser_sub = nh.subscribe("scan",50, laserCallback);
 
