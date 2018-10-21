@@ -240,7 +240,7 @@ void pcl_seg_Callback(const pointcloud_msgs::PointCloud2_Segments& msg){
 
 		std::cout << "Not centered angle_l is: " << angle_l << "\nNot centered angle_r is: " << angle_r << std::endl;
 
-		angle_pair= angle_calculation(angle_l, angle_r);	//conversion to center-based angles
+		angle_pair= angle_calculation(angle_l, angle_r);	//conversion to center-based angles ; doing this for the purpose of printing the values only
 
 		std::cout << "Centered angle_l is: " << angle_pair.first << "\nCentered angle_r is: " << angle_pair.second << std::endl;
 
@@ -356,22 +356,6 @@ void pcl_seg_Callback(const pointcloud_msgs::PointCloud2_Segments& msg){
 			//continue;
 		}
 
-		int width_pixels, offset;
-
-		//can include the following in later 'else'
-		if( isnan(pixel_pair.first)==0 && isnan(pixel_pair.second)==0 ){
-			width_pixels= x_r - x_l;
-			if(width_pixels < 0){
-				std::cout << "width_pixels is negative for some reason..." << std::endl;
-			}
-			offset= center + x_l;
-			std::cout << "\n\nx_l= " << x_l << "\nx_r= " << x_r << "\nwidth_pixels= " << width_pixels << "\noffset= " << offset << "\n\n\n\n";
-			cv::Rect myROIseg(offset, 0, width_pixels, cv_ptr->image.rows); 
-	    	cv::Mat roiseg = cv::Mat(cv_ptr->image,myROIseg);
-			cv::imshow("cluster1",roiseg);
-	    	cv::waitKey(30);
-	    }	
-
 		//std::cout << "min: " << angle_l*180/PI << std::endl;
 		//std::cout << "center based min: " << angle_pair.first*180/PI << std::endl;
 		//std::cout << "center based min in msg_vector: " << msg_vector.at(j).first*180/PI << std::endl << std::endl;
@@ -385,17 +369,28 @@ void pcl_seg_Callback(const pointcloud_msgs::PointCloud2_Segments& msg){
 		//std::cout << "center based max: " << angle_pair.second*180/PI << std::endl;
 		//std::cout << "center based max in global vector: " << pair_vector.at(j).second*180/PI << std::endl<< std::endl<< std::endl<< std::endl;
 		
+		int width_pixels, offset;
+
 		if( isnan(pixel_pair.first) || isnan(pixel_pair.second ) ){	//tsekare an swsto
 			out_msg.has_image.push_back(0);
 		}
 		else{								//create message for publishing
 			out_msg.has_image.push_back(1);
 
-			cv_bridge::CvImagePtr cv_ptr_in;
-			cv_ptr_in = cv_bridge::toCvCopy(latest_frame, "bgr8");
+			width_pixels= x_r - x_l;
+			offset= center + x_l;
+			if(width_pixels < 0){
+				std::cout << "width_pixels is negative for some reason..." << std::endl;
+			}
+			std::cout << "\n\nx_l= " << x_l << "\nx_r= " << x_r << "\nwidth_pixels= " << width_pixels << "\noffset= " << offset << "\n\n\n\n";
 
-			cv::Rect myROIout(offset, 0, width_pixels, cv_ptr_in->image.rows); 
-	     	cv::Mat roiout = cv::Mat(cv_ptr_in->image,myROIout);
+			cv::Rect myROIseg(offset, 0, width_pixels, cv_ptr->image.rows); 
+	    	cv::Mat roiseg = cv::Mat(cv_ptr->image, myROIseg);
+			cv::imshow("cluster1",roiseg);
+	    	cv::waitKey(30);
+
+			cv::Rect myROIout(offset, 0, width_pixels, cv_ptr->image.rows); 
+	     	cv::Mat roiout = cv::Mat(cv_ptr->image, myROIout);
 	  		sensor_msgs::ImagePtr imgptr = cv_bridge::CvImage(std_msgs::Header(), "bgr8", roiout).toImageMsg();
 	  		
 	  		out_msg.image_set.push_back(*imgptr);	//insert images into message for publishing
