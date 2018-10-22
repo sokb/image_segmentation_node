@@ -41,6 +41,8 @@ void segCallback(const image_msgs::Image_Segments set){
   window_name="view"+set.image_set.size();
   cv::destroyWindow(window_name);
 
+  std::cout << "Printing Header:\n" << set.header << std::endl;
+
   message_count++;
 
   // sensor_msgs::Image msg1 =set.image_set[0];

@@ -36,11 +36,11 @@ int first_frame= 0;
 int oor= 0;
 const double PI = 3.141592653589793;
 
-void Log (uint64_t duration_secs, std::string message){	// logs a message to LOGFILE
+void Log (uint64_t duration_nsecs, std::string message){	// logs a message to LOGFILE
 
 	std::ofstream ofs;
 	ofs.open(LOGFILE, std::ofstream::out | std::ios::app);
-  	ofs << duration_secs << " nsecs : " << message << std::endl;
+  	ofs << duration_nsecs << " nsecs : " << message << std::endl;
   	ofs.close();
 }
 
@@ -91,16 +91,6 @@ std::pair<double,double> angle_calculation(double angle_l, double angle_r){
 
 }
 
-// typedef pcl::PointCloud<pcl::PointXYZ> PointCloud;
-
-// void pcl_Callback(const PointCloud::ConstPtr& msg)
-// {
-//   printf ("Cloud: width = %d, height = %d\n", msg->width, msg->height);
-//   BOOST_FOREACH (const pcl::PointXYZ& pt, msg->points)
-//     printf ("\t(%f, %f, %f)\n", pt.x, pt.y, pt.z);
-// }
-
-
 
 void pcl_seg_Callback(const pointcloud_msgs::PointCloud2_Segments& msg){
 
@@ -124,11 +114,11 @@ void pcl_seg_Callback(const pointcloud_msgs::PointCloud2_Segments& msg){
 	cv_ptr = cv_bridge::toCvCopy(latest_frame, "bgr8");
 
 	//Timestamp: "Start" (Just got the pcl_segments message)
-	ros::Duration dur;
-	ros::Duration z_dur;
-	uint64_t secs=0;
-	uint64_t z_secs=0;
-	ros::Time start = ros::Time::now();
+	ros::WallDuration dur;
+	ros::WallDuration z_dur;
+	uint64_t nsecs=0;
+	uint64_t z_nsecs=0;
+	ros::WallTime start = ros::WallTime::now();
 
 	cv::imshow("view",cv_ptr->image);
     cv::waitKey(30);
@@ -156,7 +146,7 @@ void pcl_seg_Callback(const pointcloud_msgs::PointCloud2_Segments& msg){
    	//MAX Z******************************************************************************************************
     
     	// Timestamp: "z_start_time" (Start of maximum z pointcloud extraction process)
-		ros::Time z_start_time = ros::Time::now();
+		ros::WallTime z_start_time = ros::WallTime::now();
 
     	double max_z=pc.points[0].z;
     	for (int i=1; i < pc.points.size(); i++){		//find max z of cluster	
@@ -173,10 +163,13 @@ void pcl_seg_Callback(const pointcloud_msgs::PointCloud2_Segments& msg){
 			}
 		}
 
+		//ros::WallDuration(3).sleep();
 		// Timestamp: "z_stop_time" (End of maximum z pointcloud extraction process)
-		ros::Time z_stop_time = ros::Time::now();
-		z_dur = z_dur + (z_stop_time - z_start_time);
-		z_secs =z_secs + z_dur.toNSec();	// toNSec() returns uint64_t
+		ros::WallTime z_stop_time = ros::WallTime::now();
+		ros::WallDuration z_dur_temp= z_stop_time - z_start_time;
+		z_dur = z_dur + z_dur_temp;
+		z_nsecs =z_nsecs + z_dur.toNSec();	// toNSec() returns uint64_t
+		std::cout << "\nz_start_time is: " << z_start_time.toNSec() << "\nz_stop_time is: " << z_stop_time.toNSec() << "\nz_dur_temp is: " << z_dur_temp << "\nz_dur is: " << z_dur << "\nz_nsecs is: " << z_nsecs << std::endl;
 
 		if(counter == pcz.size() && pcz.size() == pcz.points.size() ){
 			std::cout << "pcz size same as counter (" << counter << " / " << pc.points.size() << ") ! All is fine" << std::endl;
@@ -371,7 +364,7 @@ void pcl_seg_Callback(const pointcloud_msgs::PointCloud2_Segments& msg){
 		
 		int width_pixels, offset;
 
-		if( isnan(pixel_pair.first) || isnan(pixel_pair.second ) ){	//tsekare an swsto
+		if( isnan(pixel_pair.first) || isnan(pixel_pair.second ) ){
 			out_msg.has_image.push_back(0);
 		}
 		else{								//create message for publishing
@@ -399,7 +392,7 @@ void pcl_seg_Callback(const pointcloud_msgs::PointCloud2_Segments& msg){
 		}
 	}
 
-	Log(z_secs,"Duration of Slice Extraction Process (all clusters)");
+	Log(z_nsecs,"Duration of Slice Extraction Process (all clusters)");
 
 	std::cout << "\tSize of image set: " << out_msg.image_set.size() << std::endl;
 	std::cout << "No of clusters: " << msg.clusters.size() << std::endl;
@@ -417,6 +410,11 @@ void pcl_seg_Callback(const pointcloud_msgs::PointCloud2_Segments& msg){
 		std::cout << "," << out_msg.has_image[c];
 	}
 	std::cout << "]" << std::endl;
+
+	//out_msg.header.stamp = ros::WallTime::now();
+	// out_msg.header.frame_id = msg.header.frame_id;
+	// std::cout << "FRAME ID IS..... : " << msg.header.frame_id << std::endl;
+	out_msg.header.frame_id = "hokuyo_base_laser_link";	//temporary
 
 	out_msg.factor = msg.factor;
 	out_msg.first_stamp = msg.first_stamp;
@@ -446,12 +444,12 @@ void pcl_seg_Callback(const pointcloud_msgs::PointCloud2_Segments& msg){
 	std::cout << "]" << std::endl;
 
 	/*
-  header Header 	//copy this too?
-  sensor_msgs/PointCloud2[] clusters	!!!
+  Header header
+  sensor_msgs/PointCloud2[] clusters
   int32 factor
   time first_stamp
   int32 overlap
-  int32[] cluster_id 	!!!
+  int32[] cluster_id
   int32 num_scans
   float32 angle_min
   float32 angle_max
@@ -460,13 +458,15 @@ void pcl_seg_Callback(const pointcloud_msgs::PointCloud2_Segments& msg){
   float32 range_min
   float32 range_max
   float32 scan_time
+  sensor_msgs/Image[] image_set     
+  int32[] has_image 
 	*/
 
 	// Timestamp: "End" (Just before publishing the message)
-	ros::Time end = ros::Time::now();
+	ros::WallTime end = ros::WallTime::now();
 	dur = end - start;
-	secs =dur.toNSec();
-	Log(secs,"Total Duration (from getting the message to just before publishing the new message)\n");
+	nsecs =dur.toNSec();
+	Log(nsecs,"Total Duration (from getting the message to just before publishing the new message)\n");
 
 	pub.publish(out_msg);
 
@@ -549,15 +549,15 @@ void videoCallback(const sensor_msgs::ImageConstPtr& msg){
     //cv::Rect myROI(0, 0, (cv_ptr->image.cols)/3, cv_ptr->image.rows); 
     //cv::Mat roi = cv::Mat(cv_ptr->image,myROI);
 
-    cv::Rect myROI2(cv_ptr->image.cols/3, 0, cv_ptr->image.cols/3,cv_ptr->image.rows); 
-    cv::Mat roi2 = cv::Mat(cv_ptr->image,myROI2);
+    // cv::Rect myROI2(cv_ptr->image.cols/3, 0, cv_ptr->image.cols/3,cv_ptr->image.rows); 
+    // cv::Mat roi2 = cv::Mat(cv_ptr->image,myROI2);
 
-    cv::Rect myROI3(2*(cv_ptr->image.cols/3),0,cv_ptr->image.cols/3,cv_ptr->image.rows);
-    cv::Mat roi3= cv::Mat(cv_ptr->image,myROI3);
+    // cv::Rect myROI3(2*(cv_ptr->image.cols/3),0,cv_ptr->image.cols/3,cv_ptr->image.rows);
+    // cv::Mat roi3= cv::Mat(cv_ptr->image,myROI3);
 
 
-    cv::Rect myROI4(0, 0, 150, 150); 
-    cv::Mat roi4 = cv::Mat(cv_ptr->image,myROI4);
+    // cv::Rect myROI4(0, 0, 150, 150); 
+    // cv::Mat roi4 = cv::Mat(cv_ptr->image,myROI4);
     // cv::imshow("view5", roi4);
     // cv::waitKey(30);
 
@@ -656,7 +656,7 @@ int main(int argc, char **argv)
 
   std::cout << "reached subscribers point" << std::endl;
   ros::Subscriber pcl_seg_sub = nh.subscribe<const pointcloud_msgs::PointCloud2_Segments&>("pointcloud2_cluster_tracking/clusters", 1, pcl_seg_Callback);
-  image_transport::Subscriber video_sub = it.subscribe("camera/rgb/image_raw", 50, videoCallback);		//  camera/rgb/image_raw gia to rosbag me tous 3, usb_cam/image_raw gia to rosbag me to video mono, rear_cam/image_raw gia to rosbag me emena
+  image_transport::Subscriber video_sub = it.subscribe("rear_cam/image_raw", 50, videoCallback);		//  camera/rgb/image_raw gia to rosbag me tous 3, rear_cam/image_raw gia to rosbag me emena, usb_cam/image_raw gia to rosbag me to video mono
 
   ros::Subscriber laser_sub = nh.subscribe("scan",50, laserCallback);
 
