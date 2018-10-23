@@ -100,6 +100,8 @@ void pcl_seg_Callback(const pointcloud_msgs::PointCloud2_Segments& msg){
 	
 	//pointcloud_msgs::PointCloud2_Segments msg_out;
 
+	std::cout << "Printing Header:\n" << msg.header << std::endl;
+
 	image_msgs::Image_Segments out_msg;
 
 	std::vector<std::pair<double,double>> pixel_vector;
@@ -116,8 +118,8 @@ void pcl_seg_Callback(const pointcloud_msgs::PointCloud2_Segments& msg){
 	//Timestamp: "Start" (Just got the pcl_segments message)
 	ros::WallDuration dur;
 	ros::WallDuration z_dur;
-	uint64_t nsecs=0;
-	uint64_t z_nsecs=0;
+	uint32_t nsecs=0;
+	uint32_t z_nsecs=0;
 	ros::WallTime start = ros::WallTime::now();
 
 	cv::imshow("view",cv_ptr->image);
@@ -411,11 +413,15 @@ void pcl_seg_Callback(const pointcloud_msgs::PointCloud2_Segments& msg){
 	}
 	std::cout << "]" << std::endl;
 
+	ros::WallTime stamp = ros::WallTime::now();
+	out_msg.header.stamp.sec = stamp.sec;
+	out_msg.header.stamp.nsec = stamp.nsec;
 	//out_msg.header.stamp = ros::WallTime::now();
 	// out_msg.header.frame_id = msg.header.frame_id;
 	// std::cout << "FRAME ID IS..... : " << msg.header.frame_id << std::endl;
 	out_msg.header.frame_id = "hokuyo_base_laser_link";	//temporary
 
+	out_msg.header.stamp = ros::Time::now();
 	out_msg.factor = msg.factor;
 	out_msg.first_stamp = msg.first_stamp;
 	out_msg.overlap = msg.overlap;
@@ -656,7 +662,7 @@ int main(int argc, char **argv)
 
   std::cout << "reached subscribers point" << std::endl;
   ros::Subscriber pcl_seg_sub = nh.subscribe<const pointcloud_msgs::PointCloud2_Segments&>("pointcloud2_cluster_tracking/clusters", 1, pcl_seg_Callback);
-  image_transport::Subscriber video_sub = it.subscribe("rear_cam/image_raw", 50, videoCallback);		//  camera/rgb/image_raw gia to rosbag me tous 3, rear_cam/image_raw gia to rosbag me emena, usb_cam/image_raw gia to rosbag me to video mono
+  image_transport::Subscriber video_sub = it.subscribe("camera/rgb/image_raw", 50, videoCallback);		//  camera/rgb/image_raw gia to rosbag me tous 3, rear_cam/image_raw gia to rosbag me emena, usb_cam/image_raw gia to rosbag me to video mono
 
   ros::Subscriber laser_sub = nh.subscribe("scan",50, laserCallback);
 
