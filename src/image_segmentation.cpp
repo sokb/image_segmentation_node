@@ -36,58 +36,58 @@ int first_frame= 0;
 int oor= 0;
 const double PI = 3.141592653589793;
 
-void Log (uint64_t duration_nsecs, std::string message){	// logs a message to LOGFILE
+void Log (uint32_t duration_nsecs, std::string message){	// logs a message to LOGFILE
 
 	std::ofstream ofs;
 	ofs.open(LOGFILE, std::ofstream::out | std::ios::app);
-  	ofs << duration_nsecs << " nsecs : " << message << std::endl;
-  	ofs.close();
+	ofs << duration_nsecs << " nsecs : " << message << std::endl;
+	ofs.close();
 }
 
 
 std::pair<double,double> angle_calculation(double angle_l, double angle_r){
 	//conversion to center-based angles			!A,B,C,D are the quadrants, starting from upper-left quadrant and moving clockwise.
-		double c_angle_l, c_angle_r;
-		if(angle_l > PI/2 && angle_l < PI){			//A
-			c_angle_l= - ( angle_l - PI/2 );
-		}
-		else if(angle_l > -PI/2 && angle_l < PI/2){	//B,C
-			c_angle_l= PI/2 - angle_l;
-		}
-		else if(angle_l > -PI && angle_l < -PI/2){	//D
-			c_angle_l= -( 3*PI/2 + angle_l );
-		}
-		else if(angle_l == PI/2){			
-			c_angle_l= 0;
-		}
-		else if(angle_l == PI || angle_l == -PI){			
-			c_angle_l= -PI/2;
-		}
-		else if(angle_l == -PI/2){			
-			c_angle_l= PI;
-		}
+	double c_angle_l, c_angle_r;
+	if(angle_l > PI/2 && angle_l < PI){			//A
+		c_angle_l= - ( angle_l - PI/2 );
+	}
+	else if(angle_l > -PI/2 && angle_l < PI/2){	//B,C
+		c_angle_l= PI/2 - angle_l;
+	}
+	else if(angle_l > -PI && angle_l < -PI/2){	//D
+		c_angle_l= -( 3*PI/2 + angle_l );
+	}
+	else if(angle_l == PI/2){			
+		c_angle_l= 0;
+	}
+	else if(angle_l == PI || angle_l == -PI){			
+		c_angle_l= -PI/2;
+	}
+	else if(angle_l == -PI/2){			
+		c_angle_l= PI;
+	}
 
 
-		if(angle_r > PI/2 && angle_r < PI){			//A
-			c_angle_r= - ( angle_r - PI/2 );
-		}
-		else if(angle_r > -PI/2 && angle_r < PI/2){	//B,C
-			c_angle_r= PI/2 - angle_r;
-		}
-		else if(angle_r > -PI && angle_r < -PI/2){	//D
-			c_angle_r= -( 3*PI/2 +angle_r );
-		}
-		else if(angle_r == PI/2){			
-			c_angle_r= 0;
-		}
-		else if(angle_r == PI || angle_r == -PI){			
-			c_angle_r= -PI/2;
-		}
-		else if(angle_r == -PI/2){			
-			c_angle_r= PI;
-		}
-		std::pair<double,double> pair(c_angle_l, c_angle_r);
-		return pair;
+	if(angle_r > PI/2 && angle_r < PI){			//A
+		c_angle_r= - ( angle_r - PI/2 );
+	}
+	else if(angle_r > -PI/2 && angle_r < PI/2){	//B,C
+		c_angle_r= PI/2 - angle_r;
+	}
+	else if(angle_r > -PI && angle_r < -PI/2){	//D
+		c_angle_r= -( 3*PI/2 +angle_r );
+	}
+	else if(angle_r == PI/2){			
+		c_angle_r= 0;
+	}
+	else if(angle_r == PI || angle_r == -PI){			
+		c_angle_r= -PI/2;
+	}
+	else if(angle_r == -PI/2){			
+		c_angle_r= PI;
+	}
+	std::pair<double,double> pair(c_angle_l, c_angle_r);
+	return pair;
 
 }
 
@@ -123,11 +123,11 @@ void pcl_seg_Callback(const pointcloud_msgs::PointCloud2_Segments& msg){
 	ros::WallTime start = ros::WallTime::now();
 
 	cv::imshow("view",cv_ptr->image);
-    cv::waitKey(30);
+	cv::waitKey(30);
 
-    pcl::PointCloud<pcl::PointXYZ> pcz; 			//pcz contains all points with max z
+	pcl::PointCloud<pcl::PointXYZ> pcz; 			//pcz contains all points with max z
 
-    std::cout << "\n________NEW MESSAGE________\n" << std::endl;
+	std::cout << "\n________NEW MESSAGE________\n" << std::endl;
 
 	for (int j=0; j < msg.clusters.size(); j++){		//for every cluster
 
@@ -139,20 +139,20 @@ void pcl_seg_Callback(const pointcloud_msgs::PointCloud2_Segments& msg){
 		std::pair<double,double> pixel_pair(0,0);
 
 		pcl::PCLPointCloud2 pc2;
-    	pcl_conversions::toPCL ( msg.clusters[j] , pc2 );	//from sensor_msgs::pointcloud2 to pcl::pointcloud2
+		pcl_conversions::toPCL ( msg.clusters[j] , pc2 );	//from sensor_msgs::pointcloud2 to pcl::pointcloud2
 
-    	pcl::PointCloud<pcl::PointXYZ> pc;
-    	pcl::fromPCLPointCloud2 ( pc2 , pc );				//from pcl::pointcloud2 to pcl::pointcloud
-    	//pc is clusters[j] in pointcloud format
+		pcl::PointCloud<pcl::PointXYZ> pc;
+		pcl::fromPCLPointCloud2 ( pc2 , pc );				//from pcl::pointcloud2 to pcl::pointcloud
+		//pc is clusters[j] in pointcloud format
 
-   	//MAX Z******************************************************************************************************
+	//MAX Z******************************************************************************************************
     
-    	// Timestamp: "z_start_time" (Start of maximum z pointcloud extraction process)
+		// Timestamp: "z_start_time" (Start of maximum z pointcloud extraction process)
 		ros::WallTime z_start_time = ros::WallTime::now();
 
-    	double max_z=pc.points[0].z;
-    	for (int i=1; i < pc.points.size(); i++){		//find max z of cluster	
-		 	if(pc.points[i].z > max_z){
+		double max_z=pc.points[0].z;
+		for (int i=1; i < pc.points.size(); i++){		//find max z of cluster	
+			if(pc.points[i].z > max_z){
 				max_z= pc.points[i].z;
 			}
 		}
@@ -181,7 +181,7 @@ void pcl_seg_Callback(const pointcloud_msgs::PointCloud2_Segments& msg){
 		}
 
 		pcl::PointXYZ min_point(pcz.points[0]);
-    	pcl::PointXYZ max_point(pcz.points[0]);
+		pcl::PointXYZ max_point(pcz.points[0]);
 		std::cout << "\n\n\nSTART*****\n" << std::endl;
 		//std::cout << "original min,max y: " << min_point.y << std::endl;
 
@@ -192,7 +192,7 @@ void pcl_seg_Callback(const pointcloud_msgs::PointCloud2_Segments& msg){
 				min_point.y= pcz.points[i].y;
 				min_point.z= pcz.points[i].z;
 			}
-		 	if(pcz.points[i].y > max_point.y){
+			if(pcz.points[i].y > max_point.y){
 				max_point.x= pcz.points[i].x;
 				max_point.y= pcz.points[i].y;
 				max_point.z= pcz.points[i].z;
@@ -380,15 +380,15 @@ void pcl_seg_Callback(const pointcloud_msgs::PointCloud2_Segments& msg){
 			std::cout << "\n\nx_l= " << x_l << "\nx_r= " << x_r << "\nwidth_pixels= " << width_pixels << "\noffset= " << offset << "\n\n\n\n";
 
 			cv::Rect myROIseg(offset, 0, width_pixels, cv_ptr->image.rows); 
-	    	cv::Mat roiseg = cv::Mat(cv_ptr->image, myROIseg);
+			cv::Mat roiseg = cv::Mat(cv_ptr->image, myROIseg);
 			cv::imshow("cluster1",roiseg);
-	    	cv::waitKey(30);
+			cv::waitKey(30);
 
 			cv::Rect myROIout(offset, 0, width_pixels, cv_ptr->image.rows); 
-	     	cv::Mat roiout = cv::Mat(cv_ptr->image, myROIout);
-	  		sensor_msgs::ImagePtr imgptr = cv_bridge::CvImage(std_msgs::Header(), "bgr8", roiout).toImageMsg();
+			cv::Mat roiout = cv::Mat(cv_ptr->image, myROIout);
+			sensor_msgs::ImagePtr imgptr = cv_bridge::CvImage(std_msgs::Header(), "bgr8", roiout).toImageMsg();
 	  		
-	  		out_msg.image_set.push_back(*imgptr);	//insert images into message for publishing
+			out_msg.image_set.push_back(*imgptr);	//insert images into message for publishing
 
 			image_counter++;
 		}
@@ -413,14 +413,7 @@ void pcl_seg_Callback(const pointcloud_msgs::PointCloud2_Segments& msg){
 	}
 	std::cout << "]" << std::endl;
 
-	ros::WallTime stamp = ros::WallTime::now();
-	out_msg.header.stamp.sec = stamp.sec;
-	out_msg.header.stamp.nsec = stamp.nsec;
-	//out_msg.header.stamp = ros::WallTime::now();
-	// out_msg.header.frame_id = msg.header.frame_id;
-	// std::cout << "FRAME ID IS..... : " << msg.header.frame_id << std::endl;
-	out_msg.header.frame_id = "hokuyo_base_laser_link";	//temporary
-
+	out_msg.header.frame_id = msg.header.frame_id;
 	out_msg.header.stamp = ros::Time::now();
 	out_msg.factor = msg.factor;
 	out_msg.first_stamp = msg.first_stamp;
@@ -531,25 +524,25 @@ void videoCallback(const sensor_msgs::ImageConstPtr& msg){
 	latest_frame= *msg;
 	first_frame= 1;
   
-  try
-  {
-    //cv::imshow("view", cv_bridge::toCvShare(msg, "bgr8")->image);
-    //cv::waitKey(30);
-    cv_bridge::CvImagePtr cv_ptr;
+	try
+	{
+		//cv::imshow("view", cv_bridge::toCvShare(msg, "bgr8")->image);
+		//cv::waitKey(30);
+	cv_bridge::CvImagePtr cv_ptr;
 
-    //std::cout << "New Video Frame!" << std::endl;
+	//std::cout << "New Video Frame!" << std::endl;
 
-    try{
-      cv_ptr = cv_bridge::toCvCopy(msg, "bgr8");
-      // cv::imshow("view",cv_ptr->image);
-      // cv::waitKey(30);
-    }
-    catch (cv_bridge::Exception& e){
-      ROS_ERROR("cv_bridge exception: %s", e.what());
-      return;
-    }
+		try{
+			cv_ptr = cv_bridge::toCvCopy(msg, "bgr8");
+			// cv::imshow("view",cv_ptr->image);
+			// cv::waitKey(30);
+		}
+		catch (cv_bridge::Exception& e){
+		ROS_ERROR("cv_bridge exception: %s", e.what());
+		return;
+		}
 
-    int center = (cv_ptr->image.cols)/2;
+		int center = (cv_ptr->image.cols)/2;
 
     //cut a rectangle
     //cv::Rect myROI(0, 0, (cv_ptr->image.cols)/3, cv_ptr->image.rows); 
@@ -607,12 +600,11 @@ void videoCallback(const sensor_msgs::ImageConstPtr& msg){
 
     //pub.publish(set);	//PUBLISH
     
-  }
-  catch (cv_bridge::Exception& e)
-  {
-    ROS_ERROR("Could not convert from '%s' to 'bgr8'.", msg->encoding.c_str());
-  }
-
+	}
+	catch (cv_bridge::Exception& e)
+	{
+		ROS_ERROR("Could not convert from '%s' to 'bgr8'.", msg->encoding.c_str());
+	}
 
 }
 
@@ -634,50 +626,55 @@ void laserCallback(const sensor_msgs::LaserScan::ConstPtr& msg){
 	// std::cout << "]" << std::endl;
 }
 
-int main(int argc, char **argv)
-{
-  ros::init(argc, argv, "image_segmentation_node");
-  ros::NodeHandle nh;
+int main(int argc, char **argv){
 
-  //ROS_INFO("angle_max is 2.345\n");
+	//clear log file
+	std::ofstream ofs;
+	ofs.open(LOGFILE, std::ios::out | std::ios::trunc);
+	ofs.close();
 
-  cv::namedWindow("view");
-  std::cout << "New Window: view" << std::endl;
-  // cv::namedWindow("view2");
-  // cv::namedWindow("view3");
-  // cv::namedWindow("view4");
-  //cv::namedWindow("view5");
-  cv::namedWindow("cluster1");
-  //std::cout << "New Window: view5" << std::endl;
+	ros::init(argc, argv, "image_segmentation_node");
+	ros::NodeHandle nh;
 
-  image_transport::ImageTransport it(nh);
+	//ROS_INFO("angle_max is 2.345\n");
 
-  //advertise to output topic
-  //image_transport::Publisher pub = it.advertise("seg_images", 2);
-  pub = nh.advertise<image_msgs::Image_Segments>("seg_images", 2);
-  tpub = it.advertise("normal_image", 2);
+	cv::namedWindow("view");
+	std::cout << "New Window: view" << std::endl;
+	// cv::namedWindow("view2");
+	// cv::namedWindow("view3");
+	// cv::namedWindow("view4");
+	//cv::namedWindow("view5");
+	cv::namedWindow("cluster1");
+	//std::cout << "New Window: view5" << std::endl;
 
-  // image_transport::Subscriber image_sub = it.subscribe("camera/image", 50, imageCallback);
-  // ros::Subscriber pcl_sub = nh.subscribe<PointCloud>("points2", 1, pcl_Callback);
+	image_transport::ImageTransport it(nh);
 
-  std::cout << "reached subscribers point" << std::endl;
-  ros::Subscriber pcl_seg_sub = nh.subscribe<const pointcloud_msgs::PointCloud2_Segments&>("pointcloud2_cluster_tracking/clusters", 1, pcl_seg_Callback);
-  image_transport::Subscriber video_sub = it.subscribe("camera/rgb/image_raw", 50, videoCallback);		//  camera/rgb/image_raw gia to rosbag me tous 3, rear_cam/image_raw gia to rosbag me emena, usb_cam/image_raw gia to rosbag me to video mono
+	//advertise to output topic
+	//image_transport::Publisher pub = it.advertise("seg_images", 2);
+	pub = nh.advertise<image_msgs::Image_Segments>("seg_images", 2);
+	tpub = it.advertise("normal_image", 2);
 
-  ros::Subscriber laser_sub = nh.subscribe("scan",50, laserCallback);
+	// image_transport::Subscriber image_sub = it.subscribe("camera/image", 50, imageCallback);
+	// ros::Subscriber pcl_sub = nh.subscribe<PointCloud>("points2", 1, pcl_Callback);
 
-  ros::Rate loop_rate(0.5);
-  while (nh.ok()){
-    // pub.publish(msg);
-    // pub.publish(msg2);
-    // pub.publish(msg3);
-    ros::spinOnce();
-    loop_rate.sleep();
-  }
-  cv::destroyWindow("view");
-  // cv::destroyWindow("view2");
-  // cv::destroyWindow("view3");
-  // cv::destroyWindow("view4");
-  //cv::destroyWindow("view5");
-  cv::destroyWindow("cluster1");
+	std::cout << "reached subscribers point" << std::endl;
+	ros::Subscriber pcl_seg_sub = nh.subscribe<const pointcloud_msgs::PointCloud2_Segments&>("pointcloud2_cluster_tracking/clusters", 1, pcl_seg_Callback);
+	image_transport::Subscriber video_sub = it.subscribe("camera/rgb/image_raw", 50, videoCallback);		//  camera/rgb/image_raw gia to rosbag me tous 3, rear_cam/image_raw gia to rosbag me emena, usb_cam/image_raw gia to rosbag me to video mono
+
+	ros::Subscriber laser_sub = nh.subscribe("scan",50, laserCallback);
+
+	ros::Rate loop_rate(0.5);
+	while (nh.ok()){
+		// pub.publish(msg);
+		// pub.publish(msg2);
+		// pub.publish(msg3);
+		ros::spinOnce();
+		loop_rate.sleep();
+	}
+	cv::destroyWindow("view");
+	// cv::destroyWindow("view2");
+	// cv::destroyWindow("view3");
+	// cv::destroyWindow("view4");
+	//cv::destroyWindow("view5");
+	cv::destroyWindow("cluster1");
 }
