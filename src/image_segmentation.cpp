@@ -100,8 +100,6 @@ void pcl_seg_Callback(const pointcloud_msgs::PointCloud2_Segments& msg){
 	
 	//pointcloud_msgs::PointCloud2_Segments msg_out;
 
-	std::cout << "Printing Header:\n" << msg.header << std::endl;
-
 	image_msgs::Image_Segments out_msg;
 
 	std::vector<std::pair<double,double>> pixel_vector;
@@ -384,6 +382,8 @@ void pcl_seg_Callback(const pointcloud_msgs::PointCloud2_Segments& msg){
 			cv::imshow("cluster1",roiseg);
 			cv::waitKey(30);
 
+			//Image Segmentation
+
 			cv::Rect myROIout(offset, 0, width_pixels, cv_ptr->image.rows); 
 			cv::Mat roiout = cv::Mat(cv_ptr->image, myROIout);
 			sensor_msgs::ImagePtr imgptr = cv_bridge::CvImage(std_msgs::Header(), "bgr8", roiout).toImageMsg();
@@ -516,90 +516,30 @@ void pcl_seg_Callback(const pointcloud_msgs::PointCloud2_Segments& msg){
 
 void videoCallback(const sensor_msgs::ImageConstPtr& msg){
 
-	// std_msgs::Header h = msg->header;
-	// sensor_msgs::Image new_msg;
-	// latest_frame= *msg;	
 	std_msgs::Header h = msg->header;
 	sensor_msgs::Image new_msg;
 	latest_frame= *msg;
 	first_frame= 1;
   
-	try
-	{
+	try{
 		//cv::imshow("view", cv_bridge::toCvShare(msg, "bgr8")->image);
 		//cv::waitKey(30);
-	cv_bridge::CvImagePtr cv_ptr;
-
-	//std::cout << "New Video Frame!" << std::endl;
-
+		cv_bridge::CvImagePtr cv_ptr;
 		try{
 			cv_ptr = cv_bridge::toCvCopy(msg, "bgr8");
 			// cv::imshow("view",cv_ptr->image);
 			// cv::waitKey(30);
 		}
 		catch (cv_bridge::Exception& e){
-		ROS_ERROR("cv_bridge exception: %s", e.what());
-		return;
+			ROS_ERROR("cv_bridge exception: %s", e.what());
+			return;
 		}
 
 		int center = (cv_ptr->image.cols)/2;
 
-    //cut a rectangle
-    //cv::Rect myROI(0, 0, (cv_ptr->image.cols)/3, cv_ptr->image.rows); 
-    //cv::Mat roi = cv::Mat(cv_ptr->image,myROI);
-
-    // cv::Rect myROI2(cv_ptr->image.cols/3, 0, cv_ptr->image.cols/3,cv_ptr->image.rows); 
-    // cv::Mat roi2 = cv::Mat(cv_ptr->image,myROI2);
-
-    // cv::Rect myROI3(2*(cv_ptr->image.cols/3),0,cv_ptr->image.cols/3,cv_ptr->image.rows);
-    // cv::Mat roi3= cv::Mat(cv_ptr->image,myROI3);
-
-
-    // cv::Rect myROI4(0, 0, 150, 150); 
-    // cv::Mat roi4 = cv::Mat(cv_ptr->image,myROI4);
-    // cv::imshow("view5", roi4);
-    // cv::waitKey(30);
-
-    // image_segmentation_node::ImageSet set;
-
-    // cv::Rect myROI(0, 0, (cv_ptr->image.cols)/3, cv_ptr->image.rows); 
-    // cv::Mat roi = cv::Mat(cv_ptr->image,myROI);
-    // sensor_msgs::ImagePtr msg1 = cv_bridge::CvImage(std_msgs::Header(), "bgr8", roi).toImageMsg();
-    // set.data[0]= *msg1;
-
- //    for (int i=0; i < pair_vector.size(); i++){
-    	
- //    	// cv::Rect myROI(0, 0, 50, 50); 
- //    	// cv::Mat roi = cv::Mat(cv_ptr->image,myROI);
-
-	// 	//convert to sensor_msgs/Image
- //    	sensor_msgs::ImagePtr msg1 = cv_bridge::CvImage(std_msgs::Header(), "bgr8", roi).toImageMsg();
- //    	set.data[i]= *msg1;
-
- //    	//...
- //    	// msg1 = cv_bridge::CvImage(std_msgs::Header(), "bgr8", roi2).toImageMsg();
- //    	// set.data[1]= *msg1;
- //    	// msg1 = cv_bridge::CvImage(std_msgs::Header(), "bgr8", roi3).toImageMsg();
- //    	// set.data[2]= *msg1;
- //    	//new_msg=set.data[0];
-
-	// }
-
-    // cv::imshow("view2", roi);
-    // cv::waitKey(30);
-
-    // cv::imshow("view3", roi2);
-    // cv::waitKey(30);
-
-    // cv::imshow("view4", roi3);
-    // cv::waitKey(30);
-
-    //tpub.publish(msg1);
-
-    //tpub.publish(new_msg);
-
-    //pub.publish(set);	//PUBLISH
-    
+		//cut a rectangle
+		//cv::Rect myROI(0, 0, (cv_ptr->image.cols)/3, cv_ptr->image.rows); 
+		//cv::Mat roi = cv::Mat(cv_ptr->image,myROI);    
 	}
 	catch (cv_bridge::Exception& e)
 	{
@@ -608,23 +548,6 @@ void videoCallback(const sensor_msgs::ImageConstPtr& msg){
 
 }
 
-void laserCallback(const sensor_msgs::LaserScan::ConstPtr& msg){
-	// ROS_INFO("angle_min is: %f\n",msg->angle_min);
-	// ROS_INFO("angle_max is: %f\n",msg->angle_max);
-	// ROS_INFO("angle_increment is: %f\n",msg->angle_increment);
-	// ROS_INFO("time_increment is: %f\n",msg->time_increment);
-	// ROS_INFO("scan_time is: %f\n",msg->scan_time);
-	// ROS_INFO("range_min is: %f\n",msg->range_min);
-	// ROS_INFO("range_max is: %f\n",msg->range_max);
-	// unsigned long int i=0;
-	// ROS_INFO("Size of ranges[] = %lu",msg->ranges.size()); //size=360
-	// std::cout << "[" << std::endl;
-	// while(i<msg->ranges.size()){
-	// 	std::cout << i << ": " << msg->ranges[i]<< " ";
-	// 	i++;
-	// }
-	// std::cout << "]" << std::endl;
-}
 
 int main(int argc, char **argv){
 
@@ -636,45 +559,28 @@ int main(int argc, char **argv){
 	ros::init(argc, argv, "image_segmentation_node");
 	ros::NodeHandle nh;
 
-	//ROS_INFO("angle_max is 2.345\n");
-
 	cv::namedWindow("view");
-	std::cout << "New Window: view" << std::endl;
-	// cv::namedWindow("view2");
-	// cv::namedWindow("view3");
-	// cv::namedWindow("view4");
-	//cv::namedWindow("view5");
 	cv::namedWindow("cluster1");
-	//std::cout << "New Window: view5" << std::endl;
 
 	image_transport::ImageTransport it(nh);
 
-	//advertise to output topic
 	//image_transport::Publisher pub = it.advertise("seg_images", 2);
 	pub = nh.advertise<image_msgs::Image_Segments>("seg_images", 2);
-	tpub = it.advertise("normal_image", 2);
+	//tpub = it.advertise("normal_image", 2);
 
 	// image_transport::Subscriber image_sub = it.subscribe("camera/image", 50, imageCallback);
 	// ros::Subscriber pcl_sub = nh.subscribe<PointCloud>("points2", 1, pcl_Callback);
 
-	std::cout << "reached subscribers point" << std::endl;
 	ros::Subscriber pcl_seg_sub = nh.subscribe<const pointcloud_msgs::PointCloud2_Segments&>("pointcloud2_cluster_tracking/clusters", 1, pcl_seg_Callback);
 	image_transport::Subscriber video_sub = it.subscribe("camera/rgb/image_raw", 50, videoCallback);		//  camera/rgb/image_raw gia to rosbag me tous 3, rear_cam/image_raw gia to rosbag me emena, usb_cam/image_raw gia to rosbag me to video mono
 
-	ros::Subscriber laser_sub = nh.subscribe("scan",50, laserCallback);
-
 	ros::Rate loop_rate(0.5);
+
 	while (nh.ok()){
-		// pub.publish(msg);
-		// pub.publish(msg2);
-		// pub.publish(msg3);
 		ros::spinOnce();
 		loop_rate.sleep();
 	}
+
 	cv::destroyWindow("view");
-	// cv::destroyWindow("view2");
-	// cv::destroyWindow("view3");
-	// cv::destroyWindow("view4");
-	//cv::destroyWindow("view5");
 	cv::destroyWindow("cluster1");
 }
