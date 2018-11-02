@@ -4,7 +4,8 @@
 #include <stdlib.h>
 #include <math.h>
 #include <string>
-#include <fstream> 
+#include <fstream>
+#include <algorithm>
 
 #include <image_transport/image_transport.h>
 #include <opencv2/highgui/highgui.hpp>
@@ -25,6 +26,7 @@
 
 #define LOGFILE	"imseg.log"     // all Log(); messages will be appended to this file
 
+using namespace std;
 ros::Publisher pub;
 image_transport::Publisher tpub;
 
@@ -45,51 +47,51 @@ void Log (uint32_t duration_nsecs, std::string message){	// logs a message to LO
 }
 
 
-std::pair<double,double> angle_calculation(double angle_l, double angle_r){
-	//conversion to center-based angles			!A,B,C,D are the quadrants, starting from upper-left quadrant and moving clockwise.
-	double c_angle_l, c_angle_r;
-	if(angle_l > PI/2 && angle_l < PI){			//A
-		c_angle_l= - ( angle_l - PI/2 );
-	}
-	else if(angle_l > -PI/2 && angle_l < PI/2){	//B,C
-		c_angle_l= PI/2 - angle_l;
-	}
-	else if(angle_l > -PI && angle_l < -PI/2){	//D
-		c_angle_l= -( 3*PI/2 + angle_l );
-	}
-	else if(angle_l == PI/2){			
-		c_angle_l= 0;
-	}
-	else if(angle_l == PI || angle_l == -PI){			
-		c_angle_l= -PI/2;
-	}
-	else if(angle_l == -PI/2){			
-		c_angle_l= PI;
-	}
+// std::pair<double,double> angle_calculation(double angle_l, double angle_r){
+// 	//conversion to center-based angles			!A,B,C,D are the quadrants, starting from upper-left quadrant and moving clockwise.
+// 	double c_angle_l, c_angle_r;
+// 	if(angle_l > PI/2 && angle_l < PI){			//A
+// 		c_angle_l= - ( angle_l - PI/2 );
+// 	}
+// 	else if(angle_l > -PI/2 && angle_l < PI/2){	//B,C
+// 		c_angle_l= PI/2 - angle_l;
+// 	}
+// 	else if(angle_l > -PI && angle_l < -PI/2){	//D
+// 		c_angle_l= -( 3*PI/2 + angle_l );
+// 	}
+// 	else if(angle_l == PI/2){			
+// 		c_angle_l= 0;
+// 	}
+// 	else if(angle_l == PI || angle_l == -PI){			
+// 		c_angle_l= -PI/2;
+// 	}
+// 	else if(angle_l == -PI/2){			
+// 		c_angle_l= PI;
+// 	}
 
 
-	if(angle_r > PI/2 && angle_r < PI){			//A
-		c_angle_r= - ( angle_r - PI/2 );
-	}
-	else if(angle_r > -PI/2 && angle_r < PI/2){	//B,C
-		c_angle_r= PI/2 - angle_r;
-	}
-	else if(angle_r > -PI && angle_r < -PI/2){	//D
-		c_angle_r= -( 3*PI/2 +angle_r );
-	}
-	else if(angle_r == PI/2){			
-		c_angle_r= 0;
-	}
-	else if(angle_r == PI || angle_r == -PI){			
-		c_angle_r= -PI/2;
-	}
-	else if(angle_r == -PI/2){			
-		c_angle_r= PI;
-	}
-	std::pair<double,double> pair(c_angle_l, c_angle_r);
-	return pair;
+// 	if(angle_r > PI/2 && angle_r < PI){			//A
+// 		c_angle_r= - ( angle_r - PI/2 );
+// 	}
+// 	else if(angle_r > -PI/2 && angle_r < PI/2){	//B,C
+// 		c_angle_r= PI/2 - angle_r;
+// 	}
+// 	else if(angle_r > -PI && angle_r < -PI/2){	//D
+// 		c_angle_r= -( 3*PI/2 +angle_r );
+// 	}
+// 	else if(angle_r == PI/2){			
+// 		c_angle_r= 0;
+// 	}
+// 	else if(angle_r == PI || angle_r == -PI){			
+// 		c_angle_r= -PI/2;
+// 	}
+// 	else if(angle_r == -PI/2){			
+// 		c_angle_r= PI;
+// 	}
+// 	std::pair<double,double> pair(c_angle_l, c_angle_r);
+// 	return pair;
 
-}
+// }
 
 
 void pcl_seg_Callback(const pointcloud_msgs::PointCloud2_Segments& msg){
@@ -120,8 +122,8 @@ void pcl_seg_Callback(const pointcloud_msgs::PointCloud2_Segments& msg){
 	uint32_t z_nsecs=0;
 	ros::WallTime start = ros::WallTime::now();
 
-	cv::imshow("view",cv_ptr->image);
-	cv::waitKey(30);
+	// cv::imshow("view",cv_ptr->image);
+	// cv::waitKey(30);
 
 	pcl::PointCloud<pcl::PointXYZ> pcz; 			//pcz contains all points with max z
 
@@ -236,31 +238,36 @@ void pcl_seg_Callback(const pointcloud_msgs::PointCloud2_Segments& msg){
 
 		// angle calculation in rads [0,2pi].				! x,y are reversed because of laserscan's reversed x,y axes
 		// returned angle is in [0, pi] when y >= 0, and in (-pi, 0) when y < 0. 	
-		angle_l= atan2(min_point.x, -min_point.y);
-		angle_r= atan2(max_point.x, -max_point.y);
+		//angle_l= atan2(0, 105);		//atan2(-min_point.y, min_point.x);	//cuts right half of image
+		//angle_r= atan2(100, 100);	//atan2(-max_point.y, max_point.x);
+
+		angle_l = atan2(-min_point.y, min_point.x);
+		angle_r = atan2(-max_point.y, max_point.x);
 
 		std::cout << "Not centered angle_l is: " << angle_l << "\nNot centered angle_r is: " << angle_r << std::endl;
 
-		angle_pair= angle_calculation(angle_l, angle_r);	//conversion to center-based angles ; doing this for the purpose of printing the values only
+		//angle_pair= angle_calculation(angle_l, angle_r);	//conversion to center-based angles ; doing this for the purpose of printing the values only
+		angle_pair.first =  angle_l;
+		angle_pair.second = angle_r;
 
-		std::cout << "Centered angle_l is: " << angle_pair.first << "\nCentered angle_r is: " << angle_pair.second << std::endl;
+		// std::cout << "Centered angle_l is: " << angle_pair.first << "\nCentered angle_r is: " << angle_pair.second << std::endl;
 
-		//msg_vector.push_back( angle_calculation(angle_l, angle_r) );
-		pair_vector.push_back( angle_calculation(angle_l, angle_r) );	
+		// //msg_vector.push_back( angle_calculation(angle_l, angle_r) );
+		// pair_vector.push_back( angle_pair );	
 
-		double temp;
-		if(pair_vector.at(j).first > pair_vector.at(j).second){		// case: ymin < ymax but angle_l > angle_r
-			std::cout << "SWITCHED!\n";
-			temp= pair_vector.at(j).first;	// switch them
-			pair_vector.at(j).first= pair_vector.at(j).second;
-			pair_vector.at(j).second= temp;
-		}
-		if( oor==1 && j!=0){
-			std::cout << "*Previous (empty) cell*\n*first: " << pair_vector.at(j-1).first << "\n*second: " << pair_vector.at(j-1).second << std::endl;
-			oor=0;
-		}
-		double a_l= pair_vector.at(j).first;	//first: center-based left angle, second: center_based right angle
-		double a_r= pair_vector.at(j).second;
+		// double temp;
+		// if(pair_vector.at(j).first > pair_vector.at(j).second){		// case: ymin < ymax but angle_l > angle_r
+		// 	std::cout << "SWITCHED!\n";
+		// 	temp= pair_vector.at(j).first;	// switch them
+		// 	pair_vector.at(j).first= pair_vector.at(j).second;
+		// 	pair_vector.at(j).second= temp;
+		// }
+		// if( oor==1 && j!=0){
+		// 	std::cout << "*Previous (empty) cell*\n*first: " << pair_vector.at(j-1).first << "\n*second: " << pair_vector.at(j-1).second << std::endl;
+		// 	oor=0;
+		// }
+		// double a_l= pair_vector.at(j).first;	//first: center-based left angle, second: center_based right angle
+		// double a_r= pair_vector.at(j).second;
 		//std::cout << "ANGLES:\nLEFT: " << a_l << "\nRIGHT: " << a_r << std::endl;
 
 		double cam_min= -PI/6, cam_max= PI/6;	// Orbbec Astra Pro wideness: PI/3 (60 degrees) total
@@ -270,110 +277,120 @@ void pcl_seg_Callback(const pointcloud_msgs::PointCloud2_Segments& msg){
 		int center = (cv_ptr->image.cols)/2;
 		int x_l, x_r;
 
+
+
+		x_l = min(2*center, max(0, (int)ceil(min(angle_pair.first, angle_pair.second) * ratio + center)));
+		x_r = max(0, min(2*center, (int)floor(max(angle_pair.first, angle_pair.second) * ratio + center)));
+
+
+
 		//Pixel Conversion:
 
 		// a_r not necessarily greater than a_l (a_l, a_r are the centered angles)
-		if( a_l < a_r ){
-			if( a_l < cam_min && a_r < cam_min ){	//out of range (left)
-				std::cout << "Case: out of range! (left)" << std::endl;
-				oor=1;
+		// if( a_l < a_r ){
+		// 	if( a_l < cam_min && a_r < cam_min ){	//out of range (left)
+		// 		std::cout << "Case: out of range! (left)" << std::endl;
+		// 		oor=1;
 
-				pixel_pair.first= NAN;
-				pixel_pair.second= NAN;
-				pixel_vector.push_back( pixel_pair );
-				//continue;
-			}
-			else if( a_l > cam_max && a_r > cam_max ){	//out of range (right)
-				std::cout << "Case: out of range! (right)" << std::endl;
-				oor=1;
+		// 		pixel_pair.first= NAN;
+		// 		pixel_pair.second= NAN;
+		// 		pixel_vector.push_back( pixel_pair );
+		// 		//continue;
+		// 	}
+		// 	else if( a_l > cam_max && a_r > cam_max ){	//out of range (right)
+		// 		std::cout << "Case: out of range! (right)" << std::endl;
+		// 		oor=1;
 
-				pixel_pair.first= NAN;
-				pixel_pair.second= NAN;
-				pixel_vector.push_back( pixel_pair );
-				//continue;
-			}
-			else if( a_l < cam_min && a_r > cam_max ){				//bigger than image size
-				std::cout << "Case: bigger than image size!" << std::endl;
-				x_l= -center;
-				x_r= center;
+		// 		pixel_pair.first= NAN;
+		// 		pixel_pair.second= NAN;
+		// 		pixel_vector.push_back( pixel_pair );
+		// 		//continue;
+		// 	}
+		// 	else if( a_l < cam_min && a_r > cam_max ){				//bigger than image size
+		// 		std::cout << "Case: bigger than image size!" << std::endl;
+		// 		x_l= -center;
+		// 		x_r= center;
 
-				pixel_pair.first= x_l;
-				pixel_pair.second= x_r;
-				pixel_vector.push_back( pixel_pair );
-			}
-			else if( a_l < cam_min && a_r > cam_min && a_r < cam_max ){	//left side out of range
-				std::cout << "Case: left side out of range!" << std::endl;
-				x_l= -center;
-				x_r= a_r*ratio;		//x_r, x_l: pixel distance from center of image (can be either positive or negative)
+		// 		pixel_pair.first= x_l;
+		// 		pixel_pair.second= x_r;
+		// 		pixel_vector.push_back( pixel_pair );
+		// 	}
+		// 	else if( a_l < cam_min && a_r > cam_min && a_r < cam_max ){	//left side out of range
+		// 		std::cout << "Case: left side out of range!" << std::endl;
+		// 		x_l= -center;
+		// 		x_r= a_r*ratio;		//x_r, x_l: pixel distance from center of image (can be either positive or negative)
 
-				if((x_r-x_l)<5){
-					pixel_pair.first= NAN;
-					pixel_pair.second= NAN;	
-				}
-				else{
-					pixel_pair.first= x_l;
-					pixel_pair.second= x_r;
-				}
-				pixel_vector.push_back( pixel_pair );
-			}
-			else if( a_r > cam_max && a_l > cam_min && a_l < cam_max ){	//right side out of range
-				std::cout << "Case: right side out of range!" << std::endl;
-				x_r= center;
-				x_l= a_l*ratio;
+		// 		if((x_r-x_l)<5){
+		// 			pixel_pair.first= NAN;
+		// 			pixel_pair.second= NAN;
+		// 			std::cout << "Subcase: thin strip!" << std::endl;
+		// 		}
+		// 		else{
+		// 			pixel_pair.first= x_l;
+		// 			pixel_pair.second= x_r;
+		// 		}
+		// 		pixel_vector.push_back( pixel_pair );
+		// 	}
+		// 	else if( a_r > cam_max && a_l > cam_min && a_l < cam_max ){	//right side out of range
+		// 		std::cout << "Case: right side out of range!" << std::endl;
+		// 		x_r= center;
+		// 		x_l= a_l*ratio;
 
-				if((x_r-x_l)<5){
-					pixel_pair.first= NAN;
-					pixel_pair.second= NAN;	
-				}
-				else{
-					pixel_pair.first= x_l;
-					pixel_pair.second= x_r;
-				}
-				pixel_vector.push_back( pixel_pair );
-			}
-			else if( a_l > cam_min && a_l < cam_max && a_r > cam_min && a_r < cam_max ){	//in range
-				std::cout << "Case: in range!" << std::endl;
-				x_l= a_l*ratio;
-				x_r= a_r*ratio;
+		// 		if((x_r-x_l)<5){
+		// 			pixel_pair.first= NAN;
+		// 			pixel_pair.second= NAN;
+		// 			std::cout << "Subcase: thin strip!" << std::endl;
+		// 		}
+		// 		else{
+		// 			pixel_pair.first= x_l;
+		// 			pixel_pair.second= x_r;
+		// 		}
+		// 		pixel_vector.push_back( pixel_pair );
+		// 	}
+		// 	else if( a_l > cam_min && a_l < cam_max && a_r > cam_min && a_r < cam_max ){	//in range
+		// 		std::cout << "Case: in range!" << std::endl;
+		// 		x_l= a_l*ratio;
+		// 		x_r= a_r*ratio;
 
-				if((x_r-x_l)<5){
-					pixel_pair.first= NAN;
-					pixel_pair.second= NAN;	
-				}
-				else{
-					pixel_pair.first= x_l;
-					pixel_pair.second= x_r;
-				}
-				pixel_vector.push_back( pixel_pair );
-			}
-			else{
-				std::cout << "Case: ??????" << std::endl;
-				oor=1;
+		// 		if((x_r-x_l)<5){
+		// 			pixel_pair.first= NAN;
+		// 			pixel_pair.second= NAN;
+		// 			std::cout << "Subcase: thin strip!" << std::endl;
+		// 		}
+		// 		else{
+		// 			pixel_pair.first= x_l;
+		// 			pixel_pair.second= x_r;
+		// 		}
+		// 		pixel_vector.push_back( pixel_pair );
+		// 	}
+		// 	else{
+		// 		std::cout << "Case: ??????" << std::endl;
+		// 		oor=1;
 
-				pixel_pair.first= NAN;
-				pixel_pair.second= NAN;
-				pixel_vector.push_back( pixel_pair );
-				//continue;
-			}
-		}
-		else{
-			if( a_l == a_r ){
-				if( angle_l != angle_r ){
-					std::cout << "centered angle_l = centered angle_r and that's not ok" << std::endl;
-				}
-				else{
-					std::cout << "centered angle_l = centered angle_r and that's ok" << std::endl;
-				}
-			}
-			else{
-				std::cout << "angle mistake" << std::endl;
-			}
-			oor=1;
-			pixel_pair.first= NAN;
-			pixel_pair.second= NAN;
-			pixel_vector.push_back( pixel_pair );
-			//continue;
-		}
+		// 		pixel_pair.first= NAN;
+		// 		pixel_pair.second= NAN;
+		// 		pixel_vector.push_back( pixel_pair );
+		// 		//continue;
+		// 	}
+		// }
+		// else{
+		// 	if( a_l == a_r ){
+		// 		if( angle_l != angle_r ){
+		// 			std::cout << "centered angle_l = centered angle_r and that's not ok" << std::endl;
+		// 		}
+		// 		else{
+		// 			std::cout << "centered angle_l = centered angle_r and that's ok" << std::endl;
+		// 		}
+		// 	}
+		// 	else{
+		// 		std::cout << "angle mistake" << std::endl;
+		// 	}
+		// 	oor=1;
+		// 	pixel_pair.first= NAN;
+		// 	pixel_pair.second= NAN;
+		// 	pixel_vector.push_back( pixel_pair );
+		// 	//continue;
+		// }
 
 		//std::cout << "min: " << angle_l*180/PI << std::endl;
 		//std::cout << "center based min: " << angle_pair.first*180/PI << std::endl;
@@ -389,15 +406,17 @@ void pcl_seg_Callback(const pointcloud_msgs::PointCloud2_Segments& msg){
 		//std::cout << "center based max in global vector: " << pair_vector.at(j).second*180/PI << std::endl<< std::endl<< std::endl<< std::endl;
 		
 		int width_pixels, offset;
-
-		if( isnan(pixel_pair.first) || isnan(pixel_pair.second ) ){
+		width_pixels = x_r - x_l;
+		// if( isnan(pixel_pair.first) || isnan(pixel_pair.second ) ){
+		if (width_pixels < 5){
 			out_msg.has_image.push_back(0);
 		}
 		else{								//create message for publishing
 			out_msg.has_image.push_back(1);
 
 			width_pixels= x_r - x_l;
-			offset= center + x_l;
+			// offset= center + x_l;
+			offset = x_l;
 			if(width_pixels < 0){
 				std::cout << "width_pixels is negative for some reason..." << std::endl;
 			}
@@ -405,14 +424,16 @@ void pcl_seg_Callback(const pointcloud_msgs::PointCloud2_Segments& msg){
 
 			cv::Rect myROIseg(offset, 0, width_pixels, cv_ptr->image.rows); 
 			cv::Mat roiseg = cv::Mat(cv_ptr->image, myROIseg);
-			cv::imshow("cluster1",roiseg);
-			cv::waitKey(30);
+			// cv::imshow("cluster1",roiseg);
+			// cv::waitKey(30);
 
 			//Image Segmentation
 
-			cv::Rect myROIout(offset, 0, width_pixels, cv_ptr->image.rows); 
-			cv::Mat roiout = cv::Mat(cv_ptr->image, myROIout);
-			sensor_msgs::ImagePtr imgptr = cv_bridge::CvImage(std_msgs::Header(), "bgr8", roiout).toImageMsg();
+			//cv::Rect myROIout(offset, 0, width_pixels, cv_ptr->image.rows); 
+			//cv::Mat roiout = cv::Mat(cv_ptr->image, myROIseg);
+			sensor_msgs::ImagePtr imgptr = cv_bridge::CvImage(std_msgs::Header(), "bgr8", roiseg).toImageMsg();
+
+			tpub.publish(*imgptr);
 	  		
 			out_msg.image_set.push_back(*imgptr);	//insert images into message for publishing
 
@@ -585,20 +606,20 @@ int main(int argc, char **argv){
 	ros::init(argc, argv, "image_segmentation_node");
 	ros::NodeHandle nh;
 
-	cv::namedWindow("view");
-	cv::namedWindow("cluster1");
+	// cv::namedWindow("view");
+	// cv::namedWindow("cluster1");
 
 	image_transport::ImageTransport it(nh);
 
 	//image_transport::Publisher pub = it.advertise("seg_images", 2);
 	pub = nh.advertise<image_msgs::Image_Segments>("seg_images", 2);
-	//tpub = it.advertise("normal_image", 2);
+	tpub = it.advertise("image_segmentation_node/seg_image", 1);
 
 	// image_transport::Subscriber image_sub = it.subscribe("camera/image", 50, imageCallback);
 	// ros::Subscriber pcl_sub = nh.subscribe<PointCloud>("points2", 1, pcl_Callback);
 
 	ros::Subscriber pcl_seg_sub = nh.subscribe<const pointcloud_msgs::PointCloud2_Segments&>("pointcloud2_cluster_tracking/clusters", 1, pcl_seg_Callback);
-	image_transport::Subscriber video_sub = it.subscribe("camera/rgb/image_raw", 50, videoCallback);		//  camera/rgb/image_raw gia to rosbag me tous 3, rear_cam/image_raw gia to rosbag me emena, usb_cam/image_raw gia to rosbag me to video mono
+	image_transport::Subscriber video_sub = it.subscribe("rear_cam/image_raw", 50, videoCallback);		//  camera/rgb/image_raw gia to rosbag me tous 3, rear_cam/image_raw gia to rosbag me emena, usb_cam/image_raw gia to rosbag me to video mono
 
 	ros::Rate loop_rate(0.5);
 
@@ -607,6 +628,6 @@ int main(int argc, char **argv){
 		loop_rate.sleep();
 	}
 
-	cv::destroyWindow("view");
-	cv::destroyWindow("cluster1");
+	// cv::destroyWindow("view");
+	// cv::destroyWindow("cluster1");
 }
