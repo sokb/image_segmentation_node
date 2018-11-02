@@ -19,18 +19,18 @@ void segCallback(const image_msgs::Image_Segments set){
   int image_count = 0; 
   for( int i=0; i<set.image_set.size(); i++ ){
 
-    if(i>0){
-      window_name="view"+(i-1);
-      cv::destroyWindow(window_name);
-    }
+    // if(i>0){
+    //   window_name="view"+(i-1);
+    //   cv::destroyWindow(window_name);
+    // }
 
     sensor_msgs::Image msg =set.image_set[i];
     cv_bridge::CvImagePtr cv_ptr = cv_bridge::toCvCopy(msg, "bgr8");
 
-    window_name="view"+i;
-    cv::namedWindow(window_name);
-    cv::imshow(window_name, cv_ptr->image);
-    cv::waitKey(30);
+    // window_name="view"+i;
+    // cv::namedWindow(window_name);
+    // cv::imshow(window_name, cv_ptr->image);
+    // cv::waitKey(30);
 
                                
     std::stringstream sstream;                               
@@ -38,8 +38,8 @@ void segCallback(const image_msgs::Image_Segments set){
     ROS_ASSERT( cv::imwrite( sstream.str(),  cv_ptr->image ) );      
     image_count++;                                      
   }
-  window_name="view"+set.image_set.size();
-  cv::destroyWindow(window_name);
+  // window_name="view"+set.image_set.size();
+  // cv::destroyWindow(window_name);
 
   std::cout << "Printing Header:\n" << set.header << std::endl;
 

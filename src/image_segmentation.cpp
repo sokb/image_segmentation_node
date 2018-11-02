@@ -127,6 +127,20 @@ void pcl_seg_Callback(const pointcloud_msgs::PointCloud2_Segments& msg){
 
 	std::cout << "\n________NEW MESSAGE________\n" << std::endl;
 
+	pcl::PCLPointCloud2 pc2_temp;
+	pcl_conversions::toPCL ( msg.clusters[0] , pc2_temp );	//from sensor_msgs::pointcloud2 to pcl::pointcloud2
+
+	pcl::PointCloud<pcl::PointXYZ> pc_temp;
+	pcl::fromPCLPointCloud2 ( pc2_temp , pc_temp );				//from pcl::pointcloud2 to pcl::pointcloud
+
+	double max_z=pc_temp.points[0].z;
+	for (int i=1; i < pc_temp.points.size(); i++){		//find max z of cluster	
+		if(pc_temp.points[i].z > max_z){
+			max_z= pc_temp.points[i].z;
+		}
+	}
+	std::cout << "Max z = " << max_z << std::endl;
+
 	for (int j=0; j < msg.clusters.size(); j++){		//for every cluster
 
 		pcz.clear();
@@ -148,13 +162,7 @@ void pcl_seg_Callback(const pointcloud_msgs::PointCloud2_Segments& msg){
 		// Timestamp: "z_start_time" (Start of maximum z pointcloud extraction process)
 		ros::WallTime z_start_time = ros::WallTime::now();
 
-		double max_z=pc.points[0].z;
-		for (int i=1; i < pc.points.size(); i++){		//find max z of cluster	
-			if(pc.points[i].z > max_z){
-				max_z= pc.points[i].z;
-			}
-		}
-		std::cout << "Max z = " << max_z << std::endl;
+		
 		int counter=0;
 		for(int i=0; i < pc.points.size(); i++){		//add points with max z to a new pointcloud
 			if(pc.points[i].z == max_z){
@@ -228,8 +236,8 @@ void pcl_seg_Callback(const pointcloud_msgs::PointCloud2_Segments& msg){
 
 		// angle calculation in rads [0,2pi].				! x,y are reversed because of laserscan's reversed x,y axes
 		// returned angle is in [0, pi] when y >= 0, and in (-pi, 0) when y < 0. 	
-		angle_l= atan2(min_point.x, min_point.y);
-		angle_r= atan2(max_point.x, max_point.y);
+		angle_l= atan2(min_point.x, -min_point.y);
+		angle_r= atan2(max_point.x, -max_point.y);
 
 		std::cout << "Not centered angle_l is: " << angle_l << "\nNot centered angle_r is: " << angle_r << std::endl;
 
@@ -298,8 +306,14 @@ void pcl_seg_Callback(const pointcloud_msgs::PointCloud2_Segments& msg){
 				x_l= -center;
 				x_r= a_r*ratio;		//x_r, x_l: pixel distance from center of image (can be either positive or negative)
 
-				pixel_pair.first= x_l;
-				pixel_pair.second= x_r;
+				if((x_r-x_l)<5){
+					pixel_pair.first= NAN;
+					pixel_pair.second= NAN;	
+				}
+				else{
+					pixel_pair.first= x_l;
+					pixel_pair.second= x_r;
+				}
 				pixel_vector.push_back( pixel_pair );
 			}
 			else if( a_r > cam_max && a_l > cam_min && a_l < cam_max ){	//right side out of range
@@ -307,8 +321,14 @@ void pcl_seg_Callback(const pointcloud_msgs::PointCloud2_Segments& msg){
 				x_r= center;
 				x_l= a_l*ratio;
 
-				pixel_pair.first= x_l;
-				pixel_pair.second= x_r;
+				if((x_r-x_l)<5){
+					pixel_pair.first= NAN;
+					pixel_pair.second= NAN;	
+				}
+				else{
+					pixel_pair.first= x_l;
+					pixel_pair.second= x_r;
+				}
 				pixel_vector.push_back( pixel_pair );
 			}
 			else if( a_l > cam_min && a_l < cam_max && a_r > cam_min && a_r < cam_max ){	//in range
@@ -316,8 +336,14 @@ void pcl_seg_Callback(const pointcloud_msgs::PointCloud2_Segments& msg){
 				x_l= a_l*ratio;
 				x_r= a_r*ratio;
 
-				pixel_pair.first= x_l;
-				pixel_pair.second= x_r;
+				if((x_r-x_l)<5){
+					pixel_pair.first= NAN;
+					pixel_pair.second= NAN;	
+				}
+				else{
+					pixel_pair.first= x_l;
+					pixel_pair.second= x_r;
+				}
 				pixel_vector.push_back( pixel_pair );
 			}
 			else{
