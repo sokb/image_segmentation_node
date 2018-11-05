@@ -212,14 +212,6 @@ find_package(OpenCV)
 
 include_directories(include ${catkin_INCLUDE_DIRS} ${OpenCV_INCLUDE_DIRS})
 
-add_executable(pcl_feeder src/pcl_feeder.cpp)
-add_dependencies(pcl_feeder ${catkin_EXPORTED_TARGETS} ${${PROJECT_NAME}_EXPORTED_TARGETS})
-target_link_libraries(pcl_feeder ${catkin_LIBRARIES} ${PCL_LIBRARIES})
-
-add_executable(camera src/camera.cpp)
-add_dependencies(camera ${catkin_EXPORTED_TARGETS} ${${PROJECT_NAME}_EXPORTED_TARGETS})
-target_link_libraries(camera ${catkin_LIBRARIES} ${OpenCV_LIBRARIES})
-
 add_executable(image_segmentation src/image_segmentation.cpp)
 add_dependencies(image_segmentation ${catkin_EXPORTED_TARGETS} ${${PROJECT_NAME}_EXPORTED_TARGETS})
 target_link_libraries(image_segmentation ${catkin_LIBRARIES} ${OpenCV_LIBRARIES} ${PCL_LIBRARIES})
