@@ -201,10 +201,10 @@ add_definitions(${PCL_DEFINITIONS})
 ## Add folders to be run by python nosetests
 # catkin_add_nosetests(test)
 
-add_message_files(DIRECTORY msg
-   FILES ImageSet.msg
-)
-generate_messages(DEPENDENCIES sensor_msgs)
+#add_message_files(DIRECTORY msg
+#   FILES ImageSet.msg
+#)
+#generate_messages(DEPENDENCIES sensor_msgs)
 
 catkin_package(CATKIN_DEPENDS cv_bridge image_transport message_runtime sensor_msgs image_msgs)
 
