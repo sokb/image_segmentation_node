@@ -17,7 +17,6 @@
 #include <pcl/filters/passthrough.h>
 #include <pcl/point_cloud.h>
 #include <pcl_ros/point_cloud.h>
-#include <pcl/common/centroid.h>
 
 #include <pointcloud_msgs/PointCloud2_Segments.h>
 #include <image_msgs/Image_Segments.h>
@@ -183,14 +182,42 @@ void pcl_seg_Callback(const pointcloud_msgs::PointCloud2_Segments& msg){
 			
 			out_msg.image_set.push_back(*imgptr);	//insert images into message for publishing
 
+			//std::cout << "cluster_id is: " << msg.cluster_id[j] << std::endl;
+			//std::cout << "j is: " << j << std::endl;
+
+			if(msg.cluster_id.size() != 0 ){
+				std::cout << "cluster_id[" << j << "] : " << msg.cluster_id[j] << std::endl;
+			}
+			else{
+				std::cout << "empty!!!!!!!!!!!!!!!" << std::endl;
+			}
+
 		}
+		// if(msg.cluster_id.size() != 0 ){
+		// 	for(int i=0 ; i< msg.cluster_id.size() ; i++){
+		// 		std::cout << "cluster_id table: " << msg.cluster_id[i] << std::endl;
+		// 	}
+		// }
+		// else{
+		// 	std::cout << "empty!!!!!!!!!!!!!!!" << std::endl;
+		// }
 	}
+
+	//std::cout << "clusters[0] : " << msg.clusters[0] << std::endl;
 
 	std::cout << "\tSize of image set: " << out_msg.image_set.size() << std::endl;
 	std::cout << "No of clusters: " << msg.clusters.size() << std::endl;
 	
+	std::cout << "cluster_id contents: [";
+	if(msg.cluster_id.size()!=0){
+		for(int c=0; c < msg.cluster_id.size(); c++){
+			std::cout << "," << msg.cluster_id[c];
+		}
+		std::cout << "]" << std::endl;
+	}
+
 	// std::cout << "has_image size: " << out_msg.has_image.size() << std::endl;
-	std::cout << "has_image contents: [";
+	std::cout << "has_image contents:  [";
 	for(int c=0; c<out_msg.has_image.size(); c++){
 		std::cout << "," << out_msg.has_image[c];
 	}
@@ -264,7 +291,7 @@ int main(int argc, char **argv){
 	tpub = it.advertise("image_segmentation_node/seg_image", 1);
 
 	ros::Subscriber pcl_seg_sub = nh.subscribe<const pointcloud_msgs::PointCloud2_Segments&>("pointcloud2_cluster_tracking/clusters", 1, pcl_seg_Callback);
-	image_transport::Subscriber video_sub = it.subscribe("camera/rgb/image_raw", 50, videoCallback);		//  camera/rgb/image_raw gia to rosbag me tous 3, rear_cam/image_raw gia to rosbag me emena, usb_cam/image_raw gia to rosbag me to video mono
+	image_transport::Subscriber video_sub = it.subscribe("rear_cam/image_raw", 50, videoCallback);		//  camera/rgb/image_raw gia to rosbag me tous 3, rear_cam/image_raw gia to rosbag me emena, usb_cam/image_raw gia to rosbag me to video mono
 
 	ros::spin();
 }
