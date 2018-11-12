@@ -23,10 +23,15 @@
 
 #define LOGFILE	"imseg.log"
 #define WIDENESS_ANGLE M_PI/3 	//total camera field of view (horizontal) in rads
+#define MY_CLUSTER 1
 
 using namespace std;
 ros::Publisher pub;
 image_transport::Publisher tpub;
+int safety_pixels;
+
+//Tester
+ros::Publisher pcl_pub;
 
 sensor_msgs::Image latest_frame;
 int first_frame = 0;
@@ -82,7 +87,6 @@ void pcl_seg_Callback(const pointcloud_msgs::PointCloud2_Segments& msg){
 			max_z = pc_temp.points[i].z;
 		}
 	}
-	//std::cout << "Max z = " << max_z << std::endl;
 
 	// Timestamp: "z_stop_time" (End of maximum z pointcloud extraction process)
 	ros::WallTime z_stop_time = ros::WallTime::now();
@@ -90,9 +94,27 @@ void pcl_seg_Callback(const pointcloud_msgs::PointCloud2_Segments& msg){
 	z_nsecs = z_dur.toNSec();
 	Log(z_nsecs,"Duration of Slice Extraction Process (all clusters)");
 
-	//std::cout << "\nz_start_time is: " << z_start_time.toNSec() << "\nz_stop_time is: " << z_stop_time.toNSec() << "\nz_dur is: " << z_dur << "\nz_nsecs is: " << z_nsecs << std::endl;
-
 	for (int j=0; j < msg.clusters.size(); j++){		//for every cluster
+
+		//Tester___________________________________
+		if(msg.cluster_id.size() != 0){
+			if(msg.cluster_id[j] == MY_CLUSTER ){
+
+				sensor_msgs::PointCloud2 pcl_out;
+				pcl_out.header.frame_id = msg.header.frame_id;
+				pcl_out.height = msg.clusters[j].height;
+				pcl_out.width = msg.clusters[j].width;
+				pcl_out.fields = msg.clusters[j].fields;
+				pcl_out.is_bigendian = msg.clusters[j].is_bigendian;
+				pcl_out.point_step = msg.clusters[j].point_step;
+				pcl_out.row_step = msg.clusters[j].row_step;
+				pcl_out.is_dense = msg.clusters[j].is_dense;
+				pcl_out.data = msg.clusters[j].data;
+				
+				pcl_pub.publish(pcl_out);
+			}
+		}
+		//_________________________________________
 
 		pcz.clear();
 
@@ -115,8 +137,6 @@ void pcl_seg_Callback(const pointcloud_msgs::PointCloud2_Segments& msg){
 
 		pcl::PointXYZ min_point(pcz.points[0]);
 		pcl::PointXYZ max_point(pcz.points[0]);
-		//std::cout << "\n\n\nSTART*****\n" << std::endl;
-		//std::cout << "original min,max y: " << min_point.y << std::endl;
 
 		for (int i=1; i < pcz.points.size(); i++){		//for every point in the cluster, find min y and max y	
 			if(pcz.points[i].y < min_point.y){
@@ -131,20 +151,10 @@ void pcl_seg_Callback(const pointcloud_msgs::PointCloud2_Segments& msg){
 			}
 		}
 
-		//std::cout << "Min y is: " << min_point.y << "\nMax y is: " << max_point.y << std::endl;
-		//std::cout << "Min x is: " << min_point.x << "\nMax x is: " << max_point.x << std::endl;	//min_x is the x of point with min y (not actual min_x of cluster)
-
-		//angle_l= atan2(0, 105);	//atan2(-min_point.y, min_point.x);	//cuts right half of image
-		//angle_r= atan2(100, 100);	//atan2(-max_point.y, max_point.x);
-
 		angle_l = atan2(-min_point.y, min_point.x);
 		angle_r = atan2(-max_point.y, max_point.x);
 
-		//std::cout << "Not centered angle_l is: " << angle_l << "\nNot centered angle_r is: " << angle_r << std::endl;
-
-		//std::cout << "Image.cols (width)= " << cv_ptr->image.cols << "\nImage.rows (height)= " << cv_ptr->image.rows << "\nWIDENESS ANGLE" << WIDENESS_ANGLE << std::endl;
 		int ratio = (cv_ptr->image.cols) / (WIDENESS_ANGLE) ;	//	(width pixels) / (wideness)
-		//std::cout << "Ratio:\t" << ratio << std::endl;
 		int center = (cv_ptr->image.cols)/2;
 		int x_l, x_r;
 
@@ -152,6 +162,9 @@ void pcl_seg_Callback(const pointcloud_msgs::PointCloud2_Segments& msg){
 
 		x_l = min(2*center, max(0, (int)ceil(min(angle_l, angle_r) * ratio + center)));
 		x_r = max(0, min(2*center, (int)floor(max(angle_l, angle_r) * ratio + center)));
+
+		// x_l = max(0, x_l - safety_pixels);
+		// x_r = min(2*center, x_r + safety_pixels);
 
 		int width_pixels, offset;
 		width_pixels = x_r - x_l;
@@ -161,29 +174,18 @@ void pcl_seg_Callback(const pointcloud_msgs::PointCloud2_Segments& msg){
 		}
 		else{
 			out_msg.has_image.push_back(1);
-
-			//offset= center + x_l;
 			offset = x_l;
-			// if(width_pixels < 0){
-			// 	std::cout << "width_pixels is negative for some reason..." << std::endl;
-			// }
-			// std::cout << "\n\nx_l= " << x_l << "\nx_r= " << x_r << "\nwidth_pixels= " << width_pixels << "\noffset= " << offset << "\n\n\n\n";
 
 			cv::Rect myROIseg(offset, 0, width_pixels, cv_ptr->image.rows); 
 			cv::Mat roiseg = cv::Mat(cv_ptr->image, myROIseg);
 
 			//Image Segmentation
 
-			//cv::Rect myROIout(offset, 0, width_pixels, cv_ptr->image.rows); 
-			//cv::Mat roiout = cv::Mat(cv_ptr->image, myROIseg);
 			sensor_msgs::ImagePtr imgptr = cv_bridge::CvImage(std_msgs::Header(), "bgr8", roiseg).toImageMsg();
 
 			tpub.publish(*imgptr);
 			
 			out_msg.image_set.push_back(*imgptr);	//insert images into message for publishing
-
-			//std::cout << "cluster_id is: " << msg.cluster_id[j] << std::endl;
-			//std::cout << "j is: " << j << std::endl;
 
 			if(msg.cluster_id.size() != 0 ){
 				std::cout << "cluster_id[" << j << "] : " << msg.cluster_id[j] << std::endl;
@@ -193,17 +195,7 @@ void pcl_seg_Callback(const pointcloud_msgs::PointCloud2_Segments& msg){
 			}
 
 		}
-		// if(msg.cluster_id.size() != 0 ){
-		// 	for(int i=0 ; i< msg.cluster_id.size() ; i++){
-		// 		std::cout << "cluster_id table: " << msg.cluster_id[i] << std::endl;
-		// 	}
-		// }
-		// else{
-		// 	std::cout << "empty!!!!!!!!!!!!!!!" << std::endl;
-		// }
 	}
-
-	//std::cout << "clusters[0] : " << msg.clusters[0] << std::endl;
 
 	std::cout << "\tSize of image set: " << out_msg.image_set.size() << std::endl;
 	std::cout << "No of clusters: " << msg.clusters.size() << std::endl;
@@ -216,7 +208,6 @@ void pcl_seg_Callback(const pointcloud_msgs::PointCloud2_Segments& msg){
 		std::cout << "]" << std::endl;
 	}
 
-	// std::cout << "has_image size: " << out_msg.has_image.size() << std::endl;
 	std::cout << "has_image contents:  [";
 	for(int c=0; c<out_msg.has_image.size(); c++){
 		std::cout << "," << out_msg.has_image[c];
@@ -284,11 +275,17 @@ int main(int argc, char **argv){
 	ros::init(argc, argv, "image_segmentation_node");
 	ros::NodeHandle nh;
 
+	nh.param<int>("safety_pixels", safety_pixels, 1);
+	cout << "SAFETY PIXELS: " << safety_pixels << endl;
+
 	image_transport::ImageTransport it(nh);
 
 	//image_transport::Publisher pub = it.advertise("seg_images", 2);
 	pub = nh.advertise<image_msgs::Image_Segments>("seg_images", 2);
 	tpub = it.advertise("image_segmentation_node/seg_image", 1);
+
+	//Tester: pcl Publisher
+	pcl_pub = nh.advertise<sensor_msgs::PointCloud2> ("test_pcl", 1);
 
 	ros::Subscriber pcl_seg_sub = nh.subscribe<const pointcloud_msgs::PointCloud2_Segments&>("pointcloud2_cluster_tracking/clusters", 1, pcl_seg_Callback);
 	image_transport::Subscriber video_sub = it.subscribe("rear_cam/image_raw", 50, videoCallback);		//  camera/rgb/image_raw gia to rosbag me tous 3, rear_cam/image_raw gia to rosbag me emena, usb_cam/image_raw gia to rosbag me to video mono

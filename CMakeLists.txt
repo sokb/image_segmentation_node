@@ -202,7 +202,7 @@ add_definitions(${PCL_DEFINITIONS})
 # catkin_add_nosetests(test)
 
 #add_message_files(DIRECTORY msg
-#   FILES ImageSet.msg
+#   FILES
 #)
 #generate_messages(DEPENDENCIES sensor_msgs)
 
