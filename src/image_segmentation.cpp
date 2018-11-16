@@ -23,7 +23,7 @@
 
 #define LOGFILE	"imseg.log"
 #define WIDENESS_ANGLE M_PI/3 	//total camera field of view (horizontal) in rads
-#define MY_CLUSTER 1
+#define MY_CLUSTER 3
 
 using namespace std;
 ros::Publisher pub;
@@ -160,8 +160,8 @@ void pcl_seg_Callback(const pointcloud_msgs::PointCloud2_Segments& msg){
 
 		//Pixel Conversion
 
-		x_l = min(2*center, max(0, (int)ceil(min(angle_l, angle_r) * ratio + center)));
-		x_r = max(0, min(2*center, (int)floor(max(angle_l, angle_r) * ratio + center)));
+		x_l = min(2*center, max(0, (int)ceil(min(angle_l, angle_r) * ratio + center - safety_pixels)));
+		x_r = max(0, min(2*center, (int)floor(max(angle_l, angle_r) * ratio + center + safety_pixels)));
 
 		// x_l = max(0, x_l - safety_pixels);
 		// x_r = min(2*center, x_r + safety_pixels);
@@ -169,7 +169,7 @@ void pcl_seg_Callback(const pointcloud_msgs::PointCloud2_Segments& msg){
 		int width_pixels, offset;
 		width_pixels = x_r - x_l;
 
-		if (width_pixels < 5){
+		if (width_pixels < (5 + 2*safety_pixels)){
 			out_msg.has_image.push_back(0);
 		}
 		else{
@@ -183,7 +183,11 @@ void pcl_seg_Callback(const pointcloud_msgs::PointCloud2_Segments& msg){
 
 			sensor_msgs::ImagePtr imgptr = cv_bridge::CvImage(std_msgs::Header(), "bgr8", roiseg).toImageMsg();
 
-			tpub.publish(*imgptr);
+			if(msg.cluster_id.size() != 0){
+				if(msg.cluster_id[j] == MY_CLUSTER ){
+					tpub.publish(*imgptr);
+				}
+			}
 			
 			out_msg.image_set.push_back(*imgptr);	//insert images into message for publishing
 
@@ -275,7 +279,7 @@ int main(int argc, char **argv){
 	ros::init(argc, argv, "image_segmentation_node");
 	ros::NodeHandle nh;
 
-	nh.param<int>("safety_pixels", safety_pixels, 1);
+	nh.param<int>("safety_pixels", safety_pixels, 20);
 	cout << "SAFETY PIXELS: " << safety_pixels << endl;
 
 	image_transport::ImageTransport it(nh);
