@@ -27,7 +27,7 @@ The package also requires the OpenCV library, which is included and automaticall
 ## Instructions
 To test and run the demo, follow these steps:
 1. Create a ROS workspace (let's assume it's named *catkin_ws*) and open a terminal inside the src directory of the workspace.
-2. Clone all necessary packages from GitHub using the following commands:
+2. Clone all necessary packages from GitHub using the following commands:\
 `git clone https://github.com/roboskel/pointcloud_msgs.git`\
  `git clone https://github.com/roboskel/laserscan_stacker.git`\
  `git clone https://github.com/roboskel/pointcloud2_clustering.git`\
@@ -35,7 +35,7 @@ To test and run the demo, follow these steps:
  `git clone https://github.com/roboskel/pointcloud2_segments_viz.git`\
  `git clone https://github.com/roboskel/hpr.git`\
  `git clone https://github.com/roboskel/image_segmentation_node.git`\
- `git clone https://github.com/roboskel/image_msgs.git`\
+ `git clone https://github.com/roboskel/image_msgs.git`
  
 3. Run `cd hpr`.  Switch to rel3 branch by running `git checkout rel3`
 4. If you want to change the value of the safety_pixels parameter (defines the number of extra pixels added to each side of the cropped images), go to `src/image_segmentation_node/src` and open `image_segmentation.cpp`. In main function, change the following line:\
@@ -45,7 +45,7 @@ to\
 5.  Go to `src/hpr/launch` and open `hpr_test.launch` file with a text editor. Change the following line:
 `<param name="use_sim_time" value="False" />`\
 to\
-`<param name="use_sim_time" value="True" />`\
+`<param name="use_sim_time" value="True" />`
 6. Go to `src/laserscan_stacker/config` and open  `laserscan_stacker.yaml` file with a text editor. Change the *input topic* parameter value to `/rear_cam/image_raw`
 7. Go to the root of your workspace directory and run `catkin_make` to build the packages.
 8. Run `roscore`
