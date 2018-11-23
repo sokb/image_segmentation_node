@@ -43,7 +43,8 @@ To run the demo, follow these steps:
 4. If you want to change the value of the safety_pixels parameter (defines the number of extra pixels added to each side of the cropped images), go to `src/image_segmentation_node/src` and open `image_segmentation.cpp`. In main function, change the following line:\
 `nh.param<int>("safety_pixels", safety_pixels, 20);`\
 to\
-`nh.param<int>("safety_pixels", safety_pixels, <your_pixels>);`, where <your_pixels> is an integer of your choice (>=0).
+`nh.param<int>("safety_pixels", safety_pixels, <your_pixels>);`, where <your_pixels> is an integer of your choice (>=0).\
+There is also a `parameters.yaml` file, for passing values to the safety_pixels parameter (the creation of a launch file is needed in this case)
 5.  Go to `src/hpr/launch` and open `hpr_test.launch` file with a text editor. Change the following line:
 `<param name="use_sim_time" value="False" />`\
 to\
