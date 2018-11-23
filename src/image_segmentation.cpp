@@ -22,15 +22,14 @@
 #include <image_msgs/Image_Segments.h>
 
 #define LOGFILE	"imseg.log"
-#define WIDENESS_ANGLE M_PI/3 	//total camera field of view (horizontal) in rads
-#define MY_CLUSTER 3
+#define FIELD_OF_VIEW_ANGLE M_PI/3 	//total camera field of view (horizontal) in rads
+#define MY_CLUSTER 3	//ID of desired cluster, for the purposes of the demo
 
 using namespace std;
 ros::Publisher pub;
 image_transport::Publisher tpub;
 int safety_pixels;
 
-//Tester
 ros::Publisher pcl_pub;
 
 sensor_msgs::Image latest_frame;
@@ -96,7 +95,6 @@ void pcl_seg_Callback(const pointcloud_msgs::PointCloud2_Segments& msg){
 
 	for (int j=0; j < msg.clusters.size(); j++){		//for every cluster
 
-		//Tester___________________________________
 		if(msg.cluster_id.size() != 0){
 			if(msg.cluster_id[j] == MY_CLUSTER ){
 
@@ -114,7 +112,6 @@ void pcl_seg_Callback(const pointcloud_msgs::PointCloud2_Segments& msg){
 				pcl_pub.publish(pcl_out);
 			}
 		}
-		//_________________________________________
 
 		pcz.clear();
 
@@ -154,7 +151,7 @@ void pcl_seg_Callback(const pointcloud_msgs::PointCloud2_Segments& msg){
 		angle_l = atan2(-min_point.y, min_point.x);
 		angle_r = atan2(-max_point.y, max_point.x);
 
-		int ratio = (cv_ptr->image.cols) / (WIDENESS_ANGLE) ;	//	(width pixels) / (wideness)
+		int ratio = (cv_ptr->image.cols) / (FIELD_OF_VIEW_ANGLE) ;	//	(width pixels) / (field of view angle)
 		int center = (cv_ptr->image.cols)/2;
 		int x_l, x_r;
 
@@ -162,9 +159,6 @@ void pcl_seg_Callback(const pointcloud_msgs::PointCloud2_Segments& msg){
 
 		x_l = min(2*center, max(0, (int)ceil(min(angle_l, angle_r) * ratio + center - safety_pixels)));
 		x_r = max(0, min(2*center, (int)floor(max(angle_l, angle_r) * ratio + center + safety_pixels)));
-
-		// x_l = max(0, x_l - safety_pixels);
-		// x_r = min(2*center, x_r + safety_pixels);
 
 		int width_pixels, offset;
 		width_pixels = x_r - x_l;
@@ -280,15 +274,13 @@ int main(int argc, char **argv){
 	ros::NodeHandle nh;
 
 	nh.param<int>("safety_pixels", safety_pixels, 20);
-	cout << "SAFETY PIXELS: " << safety_pixels << endl;
+	cout << "safety_pixels= " << safety_pixels << endl;
 
 	image_transport::ImageTransport it(nh);
 
-	//image_transport::Publisher pub = it.advertise("seg_images", 2);
 	pub = nh.advertise<image_msgs::Image_Segments>("seg_images", 2);
 	tpub = it.advertise("image_segmentation_node/seg_image", 1);
 
-	//Tester: pcl Publisher
 	pcl_pub = nh.advertise<sensor_msgs::PointCloud2> ("test_pcl", 1);
 
 	ros::Subscriber pcl_seg_sub = nh.subscribe<const pointcloud_msgs::PointCloud2_Segments&>("pointcloud2_cluster_tracking/clusters", 1, pcl_seg_Callback);
