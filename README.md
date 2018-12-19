@@ -28,6 +28,7 @@ The package also requires the OpenCV library, which is included and automaticall
 
 ## Instructions
 To run the demo, follow these steps:
+1. First of all, you need to download and install Git LFS on your system in order to download the rosbags for the demo. You can follow the instructions here: https://github.com/git-lfs/git-lfs
 1. Create a ROS workspace (let's assume it's named *catkin_ws*) and open a terminal inside the *src* directory of the workspace.
 2. Clone all necessary packages from GitHub using the following commands:\
 `git clone https://github.com/roboskel/pointcloud_msgs.git`\
@@ -53,7 +54,7 @@ to\
 7. Go to `src/pointcloud2_cluster_tracking/config` and open `param.yaml` with a text editor. Change *method* to `2`.
 8. Go to the root of your workspace directory and run `catkin_make` to build the packages.
 9. Run `roscore`
-10. In a new terminal, go to the directory you saved the rosbag provided, and run: `rosbag play 2018-11-12-15-02-53.bag --clock`
+10. In a new terminal, go to the `rosbags` directory, and run: `rosbag play 1.bag --clock`
 11. In a new terminal, run `roslaunch hpr hpr_test.launch`
 12. In a new terminal, run `rosrun image_segmentation_node image_segmentation`
 13. In a new terminal, run `rviz`
@@ -70,5 +71,3 @@ to\
 16. Enjoy the demo!
 
 This package was developed and tested for `ROS Melodic`.
-
-
